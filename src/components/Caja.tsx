@@ -204,15 +204,18 @@ export function Caja() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(o => (
+                {filtered.map(o => {
+                  const statusLabel: Record<string, string> = { PREPARING: 'Preparando', SENT: 'Enviado', COMPLETED: 'Completado' };
+                  return (
                   <tr key={o.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '8px 16px', fontFamily: 'Consolas,monospace', color: 'var(--text-primary)' }}>#{o.ticketId}</td>
                     <td style={{ padding: '8px 16px', color: 'var(--text-secondary)' }}>{o.name || '—'}</td>
-                    <td style={{ padding: '8px 16px' }}><span className={`status-badge ${o.status.toLowerCase()}`}>{o.status}</span></td>
+                    <td style={{ padding: '8px 16px' }}><span className={`status-badge ${statusLabel[o.status] ? o.status.toLowerCase() : ''}`}>{statusLabel[o.status] || o.status}</span></td>
                     <td style={{ padding: '8px 16px', color: 'var(--text-secondary)' }}>{o.payment === 'CASH' ? 'Efectivo' : 'Transferencia'}</td>
                     <td style={{ padding: '8px 16px', textAlign: 'right', fontFamily: 'Consolas,monospace', color: 'var(--accent)' }}>{fmtPrice(o.total)}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

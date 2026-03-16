@@ -45,7 +45,7 @@ function OrderCard({ order }: { order: OrderData }) {
 
   const itemsSummary = order.items.map(i => {
     const v = getVariantById(i.variantId);
-    return v ? `${v.product.name} ${v.variant.name}` : 'Item';
+    return v ? `${v.product.name} ${v.variant.name}` : 'Ítem';
   }).join(', ');
 
   const toggleExpand = () => {
@@ -102,7 +102,7 @@ function OrderCard({ order }: { order: OrderData }) {
               return (
                 <div key={idx}>
                   <div className="order-detail-item">
-                    <span>{v ? `${v.product.name} ${v.variant.name}` : 'Item'}{item.isPromo && <span className="promo-badge">PROMO</span>}</span>
+                    <span>{v ? `${v.product.name} ${v.variant.name}` : 'Ítem'}{item.isPromo && <span className="promo-badge">PROMO</span>}</span>
                     <span className={item.isPromo ? 'promo-price' : ''}>{fmtPrice(base + ext)}</span>
                   </div>
                   {item.extras.map(e => {

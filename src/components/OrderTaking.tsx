@@ -377,7 +377,7 @@ function PendingSlot({ slot }: { slot: SlotState }) {
       status: 'PREPARING',
       total,
       shipping: slot.checkout.shipping,
-      items: slot.items.map(i => ({ variantId: i.variantId, label: 'Item', isPromo: i.isPromo, price: 0, extras: i.extras }))
+      items: slot.items.map(i => ({ variantId: i.variantId, label: 'Ítem', isPromo: i.isPromo, price: 0, extras: i.extras }))
     };
 
     try {

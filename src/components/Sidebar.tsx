@@ -24,7 +24,7 @@ export function Sidebar({ collapsed, toggleSidebar, setView, currentView, addrTy
       <nav className="nav">
         <div className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
           <span className="nav-icon">⊞</span>
-          <span className="nav-label">Dashboard</span>
+          <span className="nav-label">Panel</span>
         </div>
         <div className={`nav-item ${currentView === 'settings' ? 'active' : ''}`} onClick={() => setView('settings')}>
           <span className="nav-icon">⊛</span>
