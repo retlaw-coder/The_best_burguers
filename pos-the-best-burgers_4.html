@@ -1,0 +1,2591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE BEST BURGERS — POS</title>
+<style>
+
+  :root {
+    --bg-primary: #0d0d0d;
+    --bg-secondary: #161616;
+    --bg-tertiary: #1e1e1e;
+    --bg-card: #1a1a1a;
+    --accent: #FFD700;
+    --accent-dim: rgba(255,215,0,0.15);
+    --accent-border: rgba(255,215,0,0.3);
+    --text-primary: #f0f0f0;
+    --text-secondary: #888;
+    --text-muted: #555;
+    --border: rgba(255,255,255,0.07);
+    --border-accent: rgba(255,255,255,0.12);
+    --glass-bg: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.08);
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+  }
+
+  /* ── LAYOUT ─────────────────────────────────────── */
+  .app { display: flex; height: 100vh; }
+
+  /* ── SIDEBAR ─────────────────────────────────────── */
+  .sidebar {
+    width: 220px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    flex-shrink: 0;
+    transition: width 0.3s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+  }
+  .sidebar.collapsed { width: 64px; }
+
+  .sidebar-logo {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Arial Black', 'Impact', sans-serif;
+    font-size: 18px;
+    color: #000;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .logo-text {
+    font-family: 'Arial Black', 'Impact', sans-serif;
+    font-size: 15px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    line-height: 1.1;
+  }
+
+  .nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    border: 1px solid transparent;
+  }
+  .nav-item:hover { background: var(--glass-bg); color: var(--text-primary); }
+  .nav-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: var(--accent-border);
+    font-weight: 500;
+  }
+  .nav-icon { font-size: 18px; flex-shrink: 0; width: 22px; text-align: center; }
+  .nav-label { transition: opacity 0.2s; }
+  .sidebar.collapsed .nav-label { opacity: 0; pointer-events: none; }
+  .sidebar.collapsed .logo-text { opacity: 0; }
+
+  /* ── MAIN ─────────────────────────────────────── */
+  .main { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+  .header {
+    height: 56px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .header-title {
+    font-family: 'Arial Black', 'Impact', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+  .header-badge {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .header-time { font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: var(--text-secondary); }
+
+  /* ── CONTENT AREA ─────────────────────────────── */
+  .content { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+
+  /* ── MODULE VIEWS ─────────────────────────────── */
+  .view { display: none; width: 100%; min-height: 0; }
+  .view.active { display: flex; height: 100%; }
+
+  /* ── DASHBOARD ─────────────────────────────────── */
+  #view-dashboard { overflow: hidden; gap: 0; }
+  #view-settings { overflow: hidden; }
+  .settings-scroll {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  #view-caja { overflow: hidden; flex-direction: column; }
+
+  /* LEFT: Order Taking (70%) */
+  .order-taking {
+    flex: 0 0 68%;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .order-taking-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .order-taking-header h2 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .slots-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* ── SLOT ─────────────────────────────────────── */
+  .slot {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    flex-shrink: 0;
+  }
+  .slot.active {
+    border-color: var(--accent-border);
+    box-shadow: 0 0 0 1px var(--accent-border) inset;
+  }
+  .slot-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .slot-empty:hover { color: var(--accent); background: var(--accent-dim); }
+  .slot-empty .plus-icon {
+    width: 28px; height: 28px;
+    border: 1.5px dashed currentColor;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  /* ── SLOT HEADER (when active) ─────────────────── */
+  .slot-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+  .slot-number {
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Consolas', 'Courier New', monospace;
+    flex-shrink: 0;
+  }
+  .slot-title { font-size: 14px; font-weight: 500; color: var(--text-primary); flex: 1; }
+  .slot-total {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .slot-actions { display: flex; gap: 6px; }
+  .btn-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .btn-icon:hover { background: var(--glass-bg); color: var(--text-primary); border-color: var(--border-accent); }
+  .btn-icon.danger:hover { background: rgba(239,68,68,0.1); color: var(--danger); border-color: rgba(239,68,68,0.3); }
+
+  /* ── SLOT BODY ─────────────────────────────────── */
+  .slot-body { padding: 0; }
+
+  /* ── ITEMS LIST ─────────────────────────────────── */
+  .items-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .item-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .item-card:hover { border-color: var(--border-accent); background: var(--glass-bg); }
+  .item-card-info { flex: 1; min-width: 0; }
+  .item-card-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .item-card-extras { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-card-price { font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+  .item-card-remove {
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .item-card-remove:hover { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+  /* ── WIZARD ─────────────────────────────────────── */
+  .wizard {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+  }
+  .wizard-steps { display: flex; gap: 4px; margin-bottom: 14px; }
+  .wizard-step {
+    height: 3px;
+    flex: 1;
+    border-radius: 2px;
+    background: var(--border-accent);
+    transition: background 0.3s;
+  }
+  .wizard-step.done { background: var(--accent); }
+  .wizard-step.active { background: var(--accent); opacity: 0.5; }
+
+  .wizard-title { font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .options-grid { display: grid; gap: 8px; }
+  .options-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .options-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .options-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+  .option-btn {
+    padding: 10px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .option-btn:hover { border-color: var(--border-accent); background: var(--glass-bg); }
+  .option-btn.selected {
+    background: var(--accent-dim);
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+  .option-btn .price { font-size: 11px; color: var(--text-muted); font-family: 'Consolas', 'Courier New', monospace; }
+  .option-btn.selected .price { color: rgba(255,215,0,0.6); }
+
+  .extras-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .extra-pill {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    display: flex; flex-direction: column; gap: 2px;
+    user-select: none;
+  }
+  .extra-pill .eprice { font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: var(--text-muted); }
+  .extra-pill:hover { border-color: var(--border-accent); color: var(--text-primary); background: var(--glass-bg); }
+  .extra-pill.selected { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+  .extra-pill.selected .eprice { color: rgba(255,215,0,0.55); }
+
+  .wizard-nav { display: flex; gap: 8px; margin-top: 12px; }
+  .btn {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--glass-bg); border-color: var(--border-accent); }
+  .btn.primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+  .btn.primary:hover { background: #ffe033; border-color: #ffe033; }
+  .btn.secondary { background: transparent; }
+  .btn.danger { color: var(--danger); border-color: rgba(239,68,68,0.3); }
+  .btn.danger:hover { background: rgba(239,68,68,0.1); }
+  .btn.sm { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.full { width: 100%; justify-content: center; }
+
+  /* ── CHECKOUT ─────────────────────────────────── */
+  .checkout {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .checkout-title { font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-row { display: flex; gap: 8px; }
+  .form-field { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .form-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+  .form-input {
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .form-input:focus { border-color: var(--accent-border); }
+  .form-input::placeholder { color: var(--text-muted); }
+
+  .radio-group { display: flex; gap: 6px; }
+  .radio-opt {
+    flex: 1;
+    padding: 7px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+  .radio-opt:hover { border-color: var(--border-accent); color: var(--text-primary); }
+  .radio-opt.selected { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+
+  .toggle-group { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .toggle-opt {
+    flex: 1;
+    padding: 7px 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    border: none;
+  }
+  .toggle-opt:first-child { border-right: 1px solid var(--border); }
+  .toggle-opt:hover { background: var(--glass-bg); color: var(--text-primary); }
+  .toggle-opt.selected { background: var(--accent-dim); color: var(--accent); }
+
+  .checkout-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .checkout-total-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+  .checkout-total-amount { font-family: 'Consolas', 'Courier New', monospace; font-size: 18px; font-weight: 500; color: var(--accent); }
+
+  /* Pending badge */
+  .status-badge {
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+  .status-badge.pending { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+  .status-badge.preparing { background: rgba(59,130,246,0.15); color: var(--info); border: 1px solid rgba(59,130,246,0.3); }
+  .status-badge.sent { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+  .status-badge.completed { background: rgba(34,197,94,0.15); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+
+  /* Pending payment slot */
+  .slot-pending-body {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .slot-pending-info {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .slot-pending-detail { font-size: 12px; color: var(--text-secondary); }
+  .slot-pending-detail span { color: var(--text-primary); font-weight: 500; }
+
+  /* ── RIGHT SIDEBAR (Active Orders) ──────────────── */
+  .orders-panel {
+    flex: 0 0 32%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .orders-panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text-primary); }
+  .tab.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-border); font-weight: 500; }
+
+  .orders-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* ── ORDER CARD (Right Panel) ─────────────────── */
+  .order-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .order-card:hover { border-color: var(--border-accent); }
+  .order-card-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .order-ticket {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    flex: 1;
+  }
+  .order-total-sm { font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: var(--accent); }
+  .order-detail {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .order-card.expanded .order-detail { max-height: 400px; }
+  .order-detail-body {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .order-detail-items { display: flex; flex-direction: column; gap: 4px; }
+  .order-detail-item { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+  .order-detail-item span:first-child { color: var(--text-primary); }
+  .order-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ── SETTINGS VIEW ─────────────────────────────── */
+  .settings-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .settings-title {
+    font-family: 'Arial Black', Impact, sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--accent);
+  }
+  .settings-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .settings-section-header {
+    padding: 13px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .settings-section-header:hover { background: var(--glass-bg); color: var(--text-primary); }
+  .section-chevron {
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+  }
+  .price-table {
+    width: 100%;
+    overflow-y: auto;
+    max-height: 260px;
+    border-top: 1px solid var(--border);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .price-table.collapsed {
+    max-height: 0;
+    border-top: none;
+    overflow: hidden;
+  }
+  .section-chevron.collapsed { transform: rotate(180deg); }
+  .price-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    transition: background 0.15s;
+  }
+  .price-row:last-child { border-bottom: none; }
+  .price-row:hover { background: var(--glass-bg); }
+  .price-name { flex: 1; font-size: 14px; color: var(--text-primary); }
+  .price-input {
+    width: 100px;
+    padding: 5px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    text-align: right;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .price-input:focus { border-color: var(--accent-border); }
+
+  /* ── CAJA (PIN + Analytics) ─────────────────────── */
+  #view-caja { flex-direction: column; overflow: hidden; }
+  .pin-overlay {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+    background: var(--bg-primary);
+  }
+  .pin-title { font-family: 'Arial Black', 'Impact', sans-serif; font-size: 28px; letter-spacing: 2px; color: var(--accent); }
+  .pin-dots { display: flex; gap: 12px; }
+  .pin-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border-accent);
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+  .numpad { display: grid; grid-template-columns: repeat(3, 72px); gap: 8px; }
+  .numpad-btn {
+    height: 64px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 20px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  .numpad-btn:hover { background: var(--glass-bg); border-color: var(--border-accent); }
+  .numpad-btn:active { transform: scale(0.95); }
+  .numpad-btn.accent { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-border); }
+  .numpad-btn.del { font-size: 16px; color: var(--text-secondary); }
+  .pin-error { font-size: 13px; color: var(--danger); height: 18px; }
+
+  .caja-content { flex: 1; overflow-y: auto; padding: 24px; display: none; flex-direction: column; gap: 20px; }
+  .caja-content.visible { display: flex; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .kpi-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .kpi-value { font-family: 'Consolas', 'Courier New', monospace; font-size: 28px; font-weight: 500; color: var(--text-primary); }
+  .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .kpi-card.accent .kpi-value { color: var(--accent); }
+
+  .period-tabs { display: flex; gap: 4px; }
+
+  /* ── CONFIRM DIALOG ─────────────────────────────── */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    max-width: 360px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .modal-title { font-size: 16px; font-weight: 500; color: var(--text-primary); }
+  .modal-body { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* ── TOAST ─────────────────────────────────────── */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text-primary);
+    z-index: 999;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    max-width: 300px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .toast.visible { display: flex; }
+  .toast.success { border-left: 3px solid var(--success); }
+  .toast.warning { border-left: 3px solid var(--warning); }
+
+  /* ── SCROLLBAR ─────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 2px; }
+
+  /* ── EMPTY STATE ─────────────────────────────────── */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    color: var(--text-muted);
+    padding: 40px;
+    text-align: center;
+  }
+  .empty-state-icon { font-size: 32px; opacity: 0.4; }
+  .empty-state-text { font-size: 13px; }
+
+  /* ── ANIMATIONS ─────────────────────────────────── */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .item-card { animation: fadeIn 0.15s ease; }
+  .slot-new { animation: fadeIn 0.2s ease; }
+  /* ── ADDRESS CALCULATOR ──────────────────────────── */
+  .addr-calc {
+    border-top: 1px solid var(--border);
+    padding: 12px 10px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .addr-calc-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .sidebar.collapsed .addr-calc { display: none; }
+
+  .addr-toggle {
+    display: flex;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .addr-toggle-opt {
+    flex: 1;
+    padding: 5px 4px;
+    font-size: 11px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .addr-toggle-opt:first-child { border-right: 1px solid var(--border); }
+  .addr-toggle-opt.active { background: var(--accent-dim); color: var(--accent); }
+
+  .addr-inputs { display: flex; gap: 6px; }
+  .addr-input-wrap { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .addr-input-lbl { font-size: 10px; color: var(--text-muted); }
+  .addr-input {
+    width: 100%;
+    padding: 6px 7px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .addr-input::-webkit-outer-spin-button,
+  .addr-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .addr-input:focus { border-color: var(--accent-border); }
+
+  .addr-result {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    border-radius: 6px;
+    padding: 7px 9px;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+    line-height: 1.35;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+  }
+  .addr-result.error { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.25); color: var(--text-muted); font-weight: 400; }
+  .addr-result.empty { background: transparent; border-color: transparent; color: var(--text-muted); font-size: 11px; font-weight: 400; }
+
+  /* ── SPLIT BUTTON (Promo variants) ──────────────── */
+  .split-btn {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .split-btn-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    padding-bottom: 2px;
+  }
+  .split-btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .split-half {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    padding: 7px 4px;
+    background: var(--bg-tertiary);
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .split-half:hover { border-color: var(--border-accent); background: var(--glass-bg); }
+
+  .split-normal { color: var(--text-secondary); }
+  .split-normal.chosen {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .split-promo { color: #4ade80; border-color: rgba(74,222,128,0.25); background: rgba(34,197,94,0.07); }
+  .split-promo:hover { background: rgba(34,197,94,0.14); border-color: rgba(74,222,128,0.5); }
+  .split-promo.chosen {
+    background: rgba(34,197,94,0.25);
+    border-color: #4ade80;
+    color: #4ade80;
+    box-shadow: 0 0 0 1px #4ade80;
+  }
+
+  .split-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    opacity: 0.75;
+  }
+  .split-normal.chosen .split-label,
+  .split-promo.chosen .split-label { opacity: 1; }
+  .split-price {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: Consolas, monospace;
+  }
+
+  /* ── PROMO BADGES ────────────────────────────────── */
+  .promo-badge {
+    display: inline-block;
+    background: rgba(34,197,94,0.18);
+    color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.35);
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 1px 5px;
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+  .promo-price { color: #4ade80 !important; }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon" onclick="toggleSidebar()">B</div>
+      <div class="logo-text">THE BEST<br>BURGERS</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="showView('dashboard')">
+        <span class="nav-icon">⊞</span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="showView('settings')">
+        <span class="nav-icon">⊛</span>
+        <span class="nav-label">Precios</span>
+      </div>
+      <div class="nav-item" onclick="showView('caja')">
+        <span class="nav-icon">⊠</span>
+        <span class="nav-label">Caja</span>
+      </div>
+    </nav>
+
+    <!-- ADDRESS CALCULATOR -->
+    <div class="addr-calc">
+      <div class="addr-calc-label">📍 Entre calles</div>
+      <div class="addr-toggle">
+        <div class="addr-toggle-opt active" id="addr-type-street" onclick="addrSetType('street')">Calle / Av.</div>
+        <div class="addr-toggle-opt" id="addr-type-diag" onclick="addrSetType('diag')">Diagonal</div>
+      </div>
+      <div class="addr-inputs">
+        <div class="addr-input-wrap">
+          <div class="addr-input-lbl">N° vía</div>
+          <input class="addr-input" type="number" id="addr-street-num" placeholder="14" min="1" oninput="addrCalc()">
+        </div>
+        <div class="addr-input-wrap">
+          <div class="addr-input-lbl">N° puerta</div>
+          <input class="addr-input" type="number" id="addr-door-num" placeholder="445" min="0" oninput="addrCalc()">
+        </div>
+      </div>
+      <div class="addr-result empty" id="addr-result">Ingresá calle y puerta</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- HEADER -->
+    <header class="header">
+      <span class="header-title">THE BEST BURGERS</span>
+      <span class="header-badge" id="header-badge">POS v1.0</span>
+      <div class="header-right">
+        <span class="header-time" id="clock"></span>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ======= DASHBOARD VIEW ======= -->
+      <div class="view active" id="view-dashboard">
+        <!-- LEFT: ORDER TAKING -->
+        <div class="order-taking">
+          <div class="order-taking-header">
+            <h2>Captura de Pedidos</h2>
+          </div>
+          <div class="slots-container" id="slots-container">
+            <!-- Slots rendered by JS -->
+          </div>
+        </div>
+
+        <!-- RIGHT: ACTIVE ORDERS -->
+        <div class="orders-panel">
+          <div class="orders-panel-header">
+            <div class="tabs">
+              <div class="tab active" onclick="switchOrderTab('active', this)">En Curso</div>
+              <div class="tab" onclick="switchOrderTab('delivered', this)">Entregados</div>
+            </div>
+          </div>
+          <div class="orders-list" id="orders-list">
+            <div class="empty-state">
+              <div class="empty-state-icon">📋</div>
+              <div class="empty-state-text">Los pedidos confirmados<br>aparecerán aquí</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======= SETTINGS VIEW ======= -->
+      <div class="view" id="view-settings">
+        <div class="settings-scroll">
+
+          <div class="settings-top-bar">
+            <h2 class="settings-title">Configuración de Precios</h2>
+            <button class="btn primary" onclick="savePrices()">Guardar todos los cambios</button>
+          </div>
+
+          <!-- Burgers -->
+          <div class="settings-section" id="section-burgers">
+            <div class="settings-section-header" onclick="toggleSection('burgers')">
+              <span>Hamburguesas</span>
+              <span class="section-chevron" id="chevron-burgers">▲</span>
+            </div>
+            <div class="price-table" id="burger-prices"></div>
+          </div>
+
+          <!-- Beverages -->
+          <div class="settings-section" id="section-beverages">
+            <div class="settings-section-header" onclick="toggleSection('beverages')">
+              <span>Bebidas</span>
+              <span class="section-chevron" id="chevron-beverages">▲</span>
+            </div>
+            <div class="price-table" id="beverage-prices"></div>
+          </div>
+
+          <!-- Extras -->
+          <div class="settings-section" id="section-extras">
+            <div class="settings-section-header" onclick="toggleSection('extras')">
+              <span>Extras</span>
+              <span class="section-chevron" id="chevron-extras">▲</span>
+            </div>
+            <div class="price-table" id="extra-prices"></div>
+          </div>
+
+          <!-- Promotions -->
+          <div class="settings-section" id="section-promos">
+            <div class="settings-section-header" onclick="toggleSection('promos')">
+              <span>Promociones</span>
+              <span class="section-chevron" id="chevron-promos">▲</span>
+            </div>
+            <div class="price-table" id="promos-list" style="max-height:320px;">
+              <div id="promos-inner"></div>
+              <div style="padding:12px 16px;">
+                <button class="btn primary sm full" onclick="openPromoCreator()">+ Agregar Promo</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ======= CAJA VIEW ======= -->
+      <div class="view" id="view-caja">
+        <!-- PIN Overlay -->
+        <div class="pin-overlay" id="pin-overlay">
+          <div class="pin-title">🔒 ACCESO CAJA</div>
+          <div class="pin-dots" id="pin-dots">
+            <div class="pin-dot" id="dot-0"></div>
+            <div class="pin-dot" id="dot-1"></div>
+            <div class="pin-dot" id="dot-2"></div>
+            <div class="pin-dot" id="dot-3"></div>
+          </div>
+          <div class="pin-error" id="pin-error"></div>
+          <div class="numpad">
+            <button class="numpad-btn" onclick="pinInput('1')">1</button>
+            <button class="numpad-btn" onclick="pinInput('2')">2</button>
+            <button class="numpad-btn" onclick="pinInput('3')">3</button>
+            <button class="numpad-btn" onclick="pinInput('4')">4</button>
+            <button class="numpad-btn" onclick="pinInput('5')">5</button>
+            <button class="numpad-btn" onclick="pinInput('6')">6</button>
+            <button class="numpad-btn" onclick="pinInput('7')">7</button>
+            <button class="numpad-btn" onclick="pinInput('8')">8</button>
+            <button class="numpad-btn" onclick="pinInput('9')">9</button>
+            <button class="numpad-btn del" onclick="pinDelete()">⌫</button>
+            <button class="numpad-btn" onclick="pinInput('0')">0</button>
+            <button class="numpad-btn accent" onclick="pinSubmit()">✓</button>
+          </div>
+        </div>
+
+        <!-- Analytics Content -->
+        <div class="caja-content" id="caja-content">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <h2 style="font-family:'Arial Black', Impact, sans-serif;font-size:24px;letter-spacing:1px;color:var(--accent)">Módulo Caja</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div class="period-tabs">
+                <div class="tab active" onclick="setPeriod('day',this)">Hoy</div>
+                <div class="tab" onclick="setPeriod('week',this)">Semana</div>
+                <div class="tab" onclick="setPeriod('month',this)">Mes</div>
+              </div>
+              <button class="btn sm danger" onclick="lockCaja()">Bloquear</button>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card accent">
+              <div class="kpi-label">Ingreso Bruto</div>
+              <div class="kpi-value" id="kpi-revenue">$0</div>
+              <div class="kpi-sub" id="kpi-revenue-sub">Período seleccionado</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Total Pedidos</div>
+              <div class="kpi-value" id="kpi-orders">0</div>
+              <div class="kpi-sub">Completados + en curso</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Ticket Promedio</div>
+              <div class="kpi-value" id="kpi-avg">$0</div>
+              <div class="kpi-sub">Por pedido</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Efectivo / Transfer.</div>
+              <div class="kpi-value" id="kpi-methods">0 / 0</div>
+              <div class="kpi-sub">Métodos de pago</div>
+            </div>
+          </div>
+
+          <!-- Simple table of orders -->
+          <div class="settings-section">
+            <div class="settings-section-header">Detalle de Pedidos</div>
+            <div id="caja-orders-table" style="overflow-x:auto;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Confirmar acción</div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn danger" id="modal-confirm-btn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✓</span>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// DATA / MENU
+// ══════════════════════════════════════════════════════════════
+const MENU = {
+  burgers: [
+    { id: 'cheese', name: 'Cheese', desc: 'Pan, carne, cheddar', variants: [
+      { id: 'cheese-s', name: 'Simple', price: 7400 },
+      { id: 'cheese-d', name: 'Doble', price: 9900 },
+      { id: 'cheese-t', name: 'Triple', price: 11900 }
+    ]},
+    { id: 'cheese-bacon', name: 'Cheese Bacon', desc: 'Pan, carne, cheddar, bacon', variants: [
+      { id: 'cb-s', name: 'Simple', price: 7700 },
+      { id: 'cb-d', name: 'Doble', price: 10200 },
+      { id: 'cb-t', name: 'Triple', price: 12200 }
+    ]},
+    { id: 'tasty', name: 'Tasty', desc: 'Pan, salsa tasty, carne, cheddar, lechuga, tomate', variants: [
+      { id: 'tasty-s', name: 'Simple', price: 8000 },
+      { id: 'tasty-d', name: 'Doble', price: 10500 },
+      { id: 'tasty-t', name: 'Triple', price: 12500 }
+    ]},
+    { id: 'yankee', name: 'Yankee', desc: 'Pan, cebolla caramelizada, carne, cheddar, bacon', variants: [
+      { id: 'yankee-s', name: 'Simple', price: 8000 },
+      { id: 'yankee-d', name: 'Doble', price: 10500 },
+      { id: 'yankee-t', name: 'Triple', price: 12500 }
+    ]},
+    { id: 'mega', name: 'Mega', desc: 'Pan, ketchup, carne, cheddar, bacon, papas pay', variants: [
+      { id: 'mega-s', name: 'Simple', price: 8000 },
+      { id: 'mega-d', name: 'Doble', price: 10500 },
+      { id: 'mega-t', name: 'Triple', price: 12500 }
+    ]}
+  ],
+  beverages: [
+    { id: 'coca', name: 'Coca-Cola', variants: [
+      { id: 'coca-15', name: '1.5 Lts', price: 3800 },
+      { id: 'coca-05', name: '500cc', price: 2200 }
+    ]},
+    { id: 'sprite', name: 'Sprite', variants: [
+      { id: 'sprite-15', name: '1.5 Lts', price: 3800 },
+      { id: 'sprite-05', name: '500cc', price: 2200 }
+    ]},
+    { id: 'fanta', name: 'Fanta', variants: [
+      { id: 'fanta-15', name: '1.5 Lts', price: 3800 },
+      { id: 'fanta-05', name: '500cc', price: 2200 }
+    ]}
+  ],
+  extras: [
+    { id: 'ex-medallion', name: 'Medallón de carne', price: 2500 },
+    { id: 'ex-bacon', name: 'Bacon', price: 1000 },
+    { id: 'ex-cheddar', name: 'Extra cheddar', price: 800 },
+    { id: 'ex-tomato', name: 'Tomate', price: 500 },
+    { id: 'ex-lettuce', name: 'Lechuga', price: 500 },
+    { id: 'ex-papas', name: 'Papas pay', price: 500 },
+    { id: 'ex-ketchup', name: 'Ketchup', price: 500 },
+    { id: 'ex-tasty', name: 'Tasty', price: 500 },
+    { id: 'ex-onion', name: 'Cebolla caramelizada', price: 500 }
+  ]
+};
+
+// Live prices (mutable via settings)
+let PRICES = {};
+// Initialize from MENU
+[...MENU.burgers, ...MENU.beverages].forEach(p => p.variants.forEach(v => PRICES[v.id] = v.price));
+MENU.extras.forEach(e => PRICES[e.id] = e.price);
+
+// ── PROMOTIONS STATE ─────────────────────────────────────────
+// Structure: { [variantId]: { discount: number, active: true } }
+let PROMOS = {};
+
+function getPromo(variantId) {
+  const p = PROMOS[variantId];
+  return (p && p.active && p.discount > 0) ? p : null;
+}
+
+function promoPrice(variantId) {
+  const base = PRICES[variantId] || 0;
+  const p = getPromo(variantId);
+  return p ? Math.max(0, base - p.discount) : base;
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let slots = [
+  { id: 1, state: 'empty', items: [], wizard: null, checkout: { address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false },
+  { id: 2, state: 'empty', items: [], wizard: null, checkout: { address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false },
+  { id: 3, state: 'empty', items: [], wizard: null, checkout: { address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false }
+];
+let nextSlotId = 4;
+let orders = []; // Confirmed orders
+let orderCounter = {}; // Per-day counter for ticket IDs
+let currentOrderTab = 'active';
+let cajaUnlocked = false;
+let pinBuffer = '';
+const PIN_CORRECT = '1234';
+let cajaCurrentPeriod = 'day';
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════
+function fmtPrice(n) {
+  return '$' + Math.round(n).toLocaleString('es-AR');
+}
+
+function generateTicketId(name) {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yy = String(now.getFullYear()).slice(-2);
+  const key = dd+mm+yy;
+  if (!orderCounter[key]) orderCounter[key] = 0;
+  orderCounter[key]++;
+  const seq = String(orderCounter[key]).padStart(3,'0');
+  return name ? name.toUpperCase().replace(/\s+/g,'').slice(0,8) : key + seq;
+}
+
+function calcSlotTotal(slot) {
+  return slot.items.reduce((sum, item) => {
+    const base = item.isPromo ? promoPrice(item.variantId) : (PRICES[item.variantId] || 0);
+    const extrasPrice = (item.extras || []).reduce((s, eid) => s + (PRICES[eid] || 0), 0);
+    return sum + base + extrasPrice;
+  }, 0) + (slot.checkout.shipping ?? 0);
+}
+
+function getVariantById(vid) {
+  for (const cat of [MENU.burgers, MENU.beverages]) {
+    for (const p of cat) {
+      for (const v of p.variants) {
+        if (v.id === vid) return { product: p, variant: v };
+      }
+    }
+  }
+  return null;
+}
+
+function getExtraById(eid) {
+  return MENU.extras.find(e => e.id === eid);
+}
+
+function itemLabel(item) {
+  const found = getVariantById(item.variantId);
+  if (!found) return 'Item';
+  return `${found.product.name} ${found.variant.name}`;
+}
+
+function itemPrice(item) {
+  const base = item.isPromo ? promoPrice(item.variantId) : (PRICES[item.variantId] || 0);
+  const extrasPrice = (item.extras || []).reduce((s, eid) => s + (PRICES[eid] || 0), 0);
+  return base + extrasPrice;
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  const icon = document.getElementById('toast-icon');
+  const msgEl = document.getElementById('toast-msg');
+  t.className = 'toast visible ' + type;
+  icon.textContent = type === 'success' ? '✓' : '⚠';
+  msgEl.textContent = msg;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.className = 'toast', 2500);
+}
+
+function showModal(title, body, onConfirm) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent = body;
+  const btn = document.getElementById('modal-confirm-btn');
+  btn.onclick = () => { onConfirm(); closeModal(); };
+  document.getElementById('modal-overlay').classList.add('visible');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('visible');
+}
+
+// ══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const items = document.querySelectorAll('.nav-item');
+  const map = { dashboard: 0, settings: 1, caja: 2 };
+  items[map[name]].classList.add('active');
+  if (name === 'settings') renderSettings();
+  if (name === 'caja') {
+    if (!cajaUnlocked) showPinOverlay();
+    else { renderCaja(); }
+  }
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ══════════════════════════════════════════════════════════════
+// SLOTS RENDER
+// ══════════════════════════════════════════════════════════════
+function renderSlots() {
+  const container = document.getElementById('slots-container');
+  container.innerHTML = '';
+  slots.forEach((slot, idx) => {
+    const el = createSlotEl(slot, idx);
+    container.appendChild(el);
+  });
+}
+
+function createSlotEl(slot, idx) {
+  const div = document.createElement('div');
+  div.className = 'slot' + (slot.state !== 'empty' ? ' active' : '');
+  div.id = 'slot-' + slot.id;
+
+  if (slot.state === 'empty') {
+    div.innerHTML = `
+      <div class="slot-empty" onclick="activateSlot(${slot.id})">
+        <div class="plus-icon">+</div>
+        <span>Nuevo Pedido</span>
+      </div>`;
+  } else if (slot.state === 'pending') {
+    div.innerHTML = buildPendingSlot(slot);
+  } else {
+    div.innerHTML = buildActiveSlot(slot);
+  }
+  return div;
+}
+
+function buildActiveSlot(slot) {
+  const total = calcSlotTotal(slot);
+  const itemsHTML = slot.items.length > 0 ? `
+    <div class="items-list">
+      ${slot.items.map((item, i) => `
+        <div class="item-card" onclick="editItem(${slot.id}, ${i})">
+          <div class="item-card-info">
+            <div class="item-card-name">
+              ${itemLabel(item)}
+              ${item.isPromo ? '<span class="promo-badge">PROMO</span>' : ''}
+            </div>
+            ${item.extras && item.extras.length > 0 ? `<div class="item-card-extras">+ ${item.extras.map(eid => getExtraById(eid)?.name).filter(Boolean).join(', ')}</div>` : ''}
+          </div>
+          <div class="item-card-price ${item.isPromo ? 'promo-price' : ''}">${fmtPrice(itemPrice(item))}</div>
+          <button class="item-card-remove" onclick="event.stopPropagation();removeItem(${slot.id}, ${i})">✕</button>
+        </div>`).join('')}
+    </div>` : '';
+
+  const wizardHTML = buildWizard(slot);
+  const checkoutHTML = slot.wizard === null && slot.items.length > 0 ? buildCheckout(slot) : '';
+  const cancelHTML = `
+    <div style="padding:10px 16px;border-top:1px solid var(--border);">
+      ${slot._confirmCancel ?
+        `<div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:12px;color:var(--danger)">¿Cancelar pedido?</span>
+          <button class="btn sm danger" onclick="confirmCancelSlot(${slot.id})">Confirmar</button>
+          <button class="btn sm" onclick="abortCancelSlot(${slot.id})">No</button>
+        </div>` :
+        `<button class="btn sm danger" onclick="cancelSlot(${slot.id})">Cancelar pedido</button>`}
+    </div>`;
+
+  return `
+    <div class="slot-header">
+      <div class="slot-number">${slot.id}</div>
+      <div class="slot-title">Pedido ${slot.id}</div>
+      <div class="slot-total">${fmtPrice(total)}</div>
+    </div>
+    <div class="slot-body">
+      ${itemsHTML}
+      ${wizardHTML}
+      ${checkoutHTML}
+      ${cancelHTML}
+    </div>`;
+}
+
+// ── WIZARD ──────────────────────────────────────────────────
+function buildWizard(slot) {
+  const w = slot.wizard;
+  if (!w) return `<div style="padding:10px 16px 0;">
+    <button class="btn full secondary" onclick="startWizard(${slot.id})">+ Agregar ítem</button>
+  </div>`;
+
+  const steps = ['Hamburguesa / Bebida', 'Variante', 'Extras'];
+  const stepsHTML = steps.map((s,i) => `<div class="wizard-step ${i < w.step ? 'done' : i === w.step ? 'active' : ''}"></div>`).join('');
+
+  let bodyHTML = '';
+
+  if (w.step === 0) {
+    // Select burger AND/OR beverage independently
+    bodyHTML = `
+      <div class="wizard-title">¿Qué lleva? (podés elegir hamburguesa y bebida)</div>
+      <div style="margin-bottom:10px;">
+        <div class="wizard-title" style="margin-bottom:6px;">Hamburguesa</div>
+        <div class="options-grid cols-5">
+          ${MENU.burgers.map(b => `
+            <button class="option-btn ${w.burgerId === b.id ? 'selected' : ''}" onclick="wizardSelectBurger(${slot.id}, '${b.id}')">
+              ${b.name}
+            </button>`).join('')}
+        </div>
+      </div>
+      <div>
+        <div class="wizard-title" style="margin-bottom:6px;">Bebida (opcional)</div>
+        <div class="options-grid cols-3">
+          ${MENU.beverages.map(b => `
+            <button class="option-btn ${w.beverageId === b.id ? 'selected' : ''}" onclick="wizardSelectBeverage(${slot.id}, '${b.id}')">
+              ${b.name}
+            </button>`).join('')}
+        </div>
+      </div>`;
+  } else if (w.step === 1) {
+    // If burger selected → show Simple/Doble/Triple. If beverage → show 1.5L/500cc. If both → show both sections.
+    const burger = w.burgerId ? MENU.burgers.find(p => p.id === w.burgerId) : null;
+    const beverage = w.beverageId ? MENU.beverages.find(p => p.id === w.beverageId) : null;
+
+    const burgerSection = burger ? `
+      <div style="margin-bottom:10px;">
+        <div class="wizard-title" style="margin-bottom:6px;">Tamaño — ${burger.name}</div>
+        <div class="options-grid cols-3">
+          ${burger.variants.map(v => {
+            const promo = getPromo(v.id);
+            const normalPrice = PRICES[v.id] || v.price;
+            const isSelected = w.burgerVariantId === v.id;
+            const chosenNormal = isSelected && !w.burgerIsPromo;
+            const chosenPromo  = isSelected && w.burgerIsPromo;
+            if (promo) {
+              const pPrice = Math.max(0, normalPrice - promo.discount);
+              return `
+                <div class="split-btn">
+                  <div class="split-btn-name">${v.name}</div>
+                  <div class="split-btn-row">
+                    <button class="split-half split-normal ${chosenNormal ? 'chosen' : ''}" onclick="wizardSelectBurgerVariant(${slot.id}, '${v.id}', false)">
+                      <span class="split-label">Normal</span>
+                      <span class="split-price">${fmtPrice(normalPrice)}</span>
+                    </button>
+                    <button class="split-half split-promo ${chosenPromo ? 'chosen' : ''}" onclick="wizardSelectBurgerVariant(${slot.id}, '${v.id}', true)">
+                      <span class="split-label">Promo</span>
+                      <span class="split-price">${fmtPrice(pPrice)}</span>
+                    </button>
+                  </div>
+                </div>`;
+            }
+            return `
+              <button class="option-btn ${isSelected ? 'selected' : ''}" onclick="wizardSelectBurgerVariant(${slot.id}, '${v.id}', false)">
+                <span>${v.name}</span>
+                <span class="price">${fmtPrice(normalPrice)}</span>
+              </button>`;
+          }).join('')}
+        </div>
+      </div>` : '';
+
+    const bevSection = beverage ? `
+      <div>
+        <div class="wizard-title" style="margin-bottom:6px;">Tamaño — ${beverage.name}</div>
+        <div class="options-grid cols-2">
+          ${beverage.variants.map(v => `
+            <button class="option-btn ${w.beverageVariantId === v.id ? 'selected' : ''}" onclick="wizardSelectBeverageVariant(${slot.id}, '${v.id}')">
+              <span>${v.name}</span>
+              <span class="price">${fmtPrice(PRICES[v.id] || v.price)}</span>
+            </button>`).join('')}
+        </div>
+      </div>` : '';
+
+    bodyHTML = burgerSection + bevSection;
+  } else if (w.step === 2) {
+    bodyHTML = `
+      <div class="wizard-title">Extras (opcional)</div>
+      <div class="extras-grid">
+        ${MENU.extras.map(e => `
+          <div class="extra-pill ${(w.extras || []).includes(e.id) ? 'selected' : ''}" onclick="wizardToggleExtra(${slot.id}, '${e.id}')">
+            <span>${e.name}</span>
+            <span class="eprice">${fmtPrice(PRICES[e.id] || e.price)}</span>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  // Step 0: need at least a burger or beverage. Step 1: need the required variants. Step 2: always ok.
+  const step0ok = w.burgerId || w.beverageId;
+  const step1ok = (!w.burgerId || w.burgerVariantId) && (!w.beverageId || w.beverageVariantId) && (w.burgerId || w.beverageId);
+  const canNext = (w.step === 0 && step0ok) || (w.step === 1 && step1ok) || w.step === 2;
+  const isEdit = w.editingIndex !== undefined && w.editingIndex !== null;
+
+  return `
+    <div class="wizard">
+      <div class="wizard-steps">${stepsHTML}</div>
+      ${bodyHTML}
+      <div class="wizard-nav">
+        ${w.step > 0 ? `<button class="btn sm secondary" onclick="wizardBack(${slot.id})">← Atrás</button>` : ''}
+        <button class="btn sm secondary" onclick="cancelWizard(${slot.id})">Cancelar</button>
+        <div style="flex:1;"></div>
+        ${w.step < 2 ?
+          `<button class="btn sm primary" onclick="wizardNext(${slot.id})" ${!canNext ? 'disabled' : ''}>Siguiente →</button>` :
+          `<button class="btn sm primary" onclick="wizardConfirm(${slot.id})">${isEdit ? 'Actualizar ítem' : 'Agregar ítem'}</button>`}
+      </div>
+    </div>`;
+}
+
+// ── CHECKOUT ─────────────────────────────────────────────────
+function buildCheckout(slot) {
+  const co = slot.checkout;
+  const isTakeAway = co.shipping === 0;
+  const subtotal = slot.items.reduce((s, item) => s + itemPrice(item), 0);
+  const total = subtotal + (co.shipping ?? 0);
+  const canConfirm = co.name && co.shipping !== null && (isTakeAway || co.address);
+
+  return `
+    <div class="checkout">
+      <div class="checkout-title">Datos del pedido</div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Nombre *</div>
+          <input class="form-input" placeholder="Nombre del cliente" value="${co.name || ''}" oninput="updateCheckout(${slot.id}, 'name', this.value)">
+        </div>
+        ${!isTakeAway ? `
+        <div class="form-field">
+          <div class="form-label">Dirección *</div>
+          <input class="form-input" placeholder="Calle y número" value="${co.address || ''}" oninput="updateCheckout(${slot.id}, 'address', this.value)">
+        </div>` : ''}
+      </div>
+      <div>
+        <div class="form-label" style="margin-bottom:6px;">Costo de envío</div>
+        <div class="radio-group">
+          <div class="radio-opt ${co.shipping === 0 ? 'selected' : ''}" onclick="updateCheckout(${slot.id}, 'shipping', 0)">🥡 Take away</div>
+          <div class="radio-opt ${co.shipping === 1500 ? 'selected' : ''}" onclick="updateCheckout(${slot.id}, 'shipping', 1500)">$1.500</div>
+          <div class="radio-opt ${co.shipping === 2000 ? 'selected' : ''}" onclick="updateCheckout(${slot.id}, 'shipping', 2000)">$2.000</div>
+          <div class="radio-opt ${co.shipping === 3000 ? 'selected' : ''}" onclick="updateCheckout(${slot.id}, 'shipping', 3000)">$3.000</div>
+        </div>
+      </div>
+      <div>
+        <div class="form-label" style="margin-bottom:6px;">Método de pago</div>
+        <div class="toggle-group">
+          <div class="toggle-opt ${co.payment === 'CASH' ? 'selected' : ''}" onclick="updateCheckout(${slot.id}, 'payment', 'CASH')">💵 Efectivo</div>
+          <div class="toggle-opt ${co.payment === 'TRANSFER' ? 'selected' : ''}" onclick="updateCheckout(${slot.id}, 'payment', 'TRANSFER')">📲 Transferencia</div>
+        </div>
+      </div>
+      <div class="checkout-total">
+        <span class="checkout-total-label">Total del pedido</span>
+        <span class="checkout-total-amount">${fmtPrice(total)}</span>
+      </div>
+      <button class="btn primary full" onclick="confirmOrder(${slot.id})" ${!canConfirm ? 'disabled' : ''}>
+        Confirmar pedido →
+      </button>
+    </div>`;
+}
+
+// ── PENDING SLOT ─────────────────────────────────────────────
+function buildPendingSlot(slot) {
+  const co = slot.checkout;
+  const total = calcSlotTotal(slot);
+  const itemsSummary = slot.items.map(item => itemLabel(item)).join(', ');
+
+  return `
+    <div class="slot-header">
+      <div class="slot-number" style="background:var(--warning);color:#000;">${slot.id}</div>
+      <div class="slot-title">${slot.ticketId || 'Pedido'}</div>
+      <span class="status-badge pending">Pendiente de pago</span>
+      <div class="slot-total">${fmtPrice(total)}</div>
+    </div>
+    <div class="slot-pending-body">
+      <div class="slot-pending-info">
+        <div class="slot-pending-detail">📍 <span>${co.address || '—'}</span></div>
+        ${co.name ? `<div class="slot-pending-detail">👤 <span>${co.name}</span></div>` : ''}
+        <div class="slot-pending-detail">💳 <span>${co.payment === 'CASH' ? 'Efectivo' : 'Transferencia'}</span></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);">${itemsSummary}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn sm primary" onclick="markPaid(${slot.id})">✓ Marcar pagado</button>
+        <button class="btn sm" onclick="printTicket(${slot.id})">🖨 Imprimir</button>
+        ${slot._confirmCancelPending
+          ? `<button class="btn sm danger" onclick="resetSlot(${slot.id})">Confirmar cancelación</button>
+             <button class="btn sm secondary" onclick="abortCancelPending(${slot.id})">No</button>`
+          : `<button class="btn sm danger" onclick="cancelPending(${slot.id})">Cancelar pedido</button>`}
+      </div>
+    </div>`;
+}
+
+function cancelPending(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot._confirmCancelPending = true;
+  renderSlots();
+}
+
+function abortCancelPending(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot._confirmCancelPending = false;
+  renderSlots();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SLOT ACTIONS
+// ══════════════════════════════════════════════════════════════
+function activateSlot(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot.state = 'active';
+  slot.wizard = { step: 0, burgerId: null, beverageId: null, burgerVariantId: null, beverageVariantId: null, extras: [] };
+  // Ensure there's always an empty slot available
+  ensureEmptySlot();
+  renderSlots();
+}
+
+function ensureEmptySlot() {
+  const emptySlots = slots.filter(s => s.state === 'empty');
+  if (emptySlots.length === 0) {
+    slots.push({ id: nextSlotId++, state: 'empty', items: [], wizard: null, checkout: { address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false });
+  }
+}
+
+function cancelSlot(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  if (slot.items.length === 0) {
+    resetSlot(slotId);
+    return;
+  }
+  slot._confirmCancel = true;
+  renderSlots();
+}
+
+function confirmCancelSlot(slotId) {
+  resetSlot(slotId);
+}
+
+function abortCancelSlot(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot._confirmCancel = false;
+  renderSlots();
+}
+
+function resetSlot(slotId) {
+  const idx = slots.findIndex(s => s.id === slotId);
+  if (idx === -1) return;
+  // If not the first 3, remove it
+  if (slotId > 3) {
+    slots.splice(idx, 1);
+  } else {
+    slots[idx] = { id: slotId, state: 'empty', items: [], wizard: null, checkout: { address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false };
+  }
+  ensureEmptySlot();
+  renderSlots();
+}
+
+// ══════════════════════════════════════════════════════════════
+// WIZARD ACTIONS
+// ══════════════════════════════════════════════════════════════
+function startWizard(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot.wizard = { step: 0, burgerId: null, beverageId: null, burgerVariantId: null, beverageVariantId: null, extras: [] };
+  renderSlots();
+}
+
+function cancelWizard(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot.wizard = null;
+  renderSlots();
+}
+
+// New: independent burger / beverage selection in step 0
+function wizardSelectBurger(slotId, burgerId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  // Toggle: clicking the same one deselects
+  slot.wizard.burgerId = slot.wizard.burgerId === burgerId ? null : burgerId;
+  slot.wizard.burgerVariantId = null;
+  renderSlots();
+}
+
+function wizardSelectBeverage(slotId, beverageId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  slot.wizard.beverageId = slot.wizard.beverageId === beverageId ? null : beverageId;
+  slot.wizard.beverageVariantId = null;
+  renderSlots();
+}
+
+function wizardSelectBurgerVariant(slotId, variantId, isPromo) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  slot.wizard.burgerVariantId = variantId;
+  slot.wizard.burgerIsPromo = !!isPromo;
+  renderSlots();
+}
+
+function wizardSelectBeverageVariant(slotId, variantId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  slot.wizard.beverageVariantId = variantId;
+  renderSlots();
+}
+
+// Legacy kept for edit-item compat
+function wizardSelectProduct(slotId, productId, category) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  if (category === 'burger') { slot.wizard.burgerId = productId; slot.wizard.burgerVariantId = null; }
+  else { slot.wizard.beverageId = productId; slot.wizard.beverageVariantId = null; }
+  renderSlots();
+}
+
+function wizardSelectVariant(slotId, variantId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  // Determine if burger or beverage variant
+  for (const b of MENU.burgers) { if (b.variants.some(v => v.id === variantId)) { slot.wizard.burgerVariantId = variantId; renderSlots(); return; } }
+  for (const b of MENU.beverages) { if (b.variants.some(v => v.id === variantId)) { slot.wizard.beverageVariantId = variantId; renderSlots(); return; } }
+}
+
+function wizardToggleExtra(slotId, extraId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  const extras = slot.wizard.extras || [];
+  const idx = extras.indexOf(extraId);
+  if (idx >= 0) extras.splice(idx, 1);
+  else extras.push(extraId);
+  slot.wizard.extras = [...extras];
+  renderSlots();
+}
+
+function wizardNext(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  slot.wizard.step++;
+  renderSlots();
+}
+
+function wizardBack(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  slot.wizard.step = Math.max(0, slot.wizard.step - 1);
+  renderSlots();
+}
+
+function wizardConfirm(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot || !slot.wizard) return;
+  const w = slot.wizard;
+  const isEdit = w.editingIndex !== undefined && w.editingIndex !== null;
+
+  // Build items: one for burger (with extras), one for beverage (no extras)
+  const newItems = [];
+  if (w.burgerVariantId) {
+    newItems.push({ variantId: w.burgerVariantId, extras: [...(w.extras || [])], isPromo: !!w.burgerIsPromo });
+  }
+  if (w.beverageVariantId) {
+    newItems.push({ variantId: w.beverageVariantId, extras: [] });
+  }
+
+  if (isEdit) {
+    // Replace the edited item(s). For simplicity, replace the one item at editingIndex with the first new item,
+    // and if there's also a beverage, insert after it.
+    if (newItems.length === 0) { slot.items.splice(w.editingIndex, 1); }
+    else { slot.items.splice(w.editingIndex, 1, ...newItems); }
+  } else {
+    slot.items.push(...newItems);
+  }
+
+  slot.wizard = null;
+  renderSlots();
+}
+
+function editItem(slotId, itemIndex) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  const item = slot.items[itemIndex];
+  const found = getVariantById(item.variantId);
+  if (!found) return;
+  const isBurger = MENU.burgers.find(b => b.id === found.product.id);
+  slot.wizard = {
+    step: 0,
+    burgerId: isBurger ? found.product.id : null,
+    beverageId: !isBurger ? found.product.id : null,
+    burgerVariantId: isBurger ? item.variantId : null,
+    beverageVariantId: !isBurger ? item.variantId : null,
+    extras: [...(item.extras || [])],
+    editingIndex: itemIndex
+  };
+  renderSlots();
+}
+
+function removeItem(slotId, itemIndex) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot.items.splice(itemIndex, 1);
+  renderSlots();
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHECKOUT ACTIONS
+// ══════════════════════════════════════════════════════════════
+function updateCheckout(slotId, field, value) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot.checkout[field] = value;
+  // Shipping changes toggle the address field visibility → need full re-render
+  // Payment changes toggle a button → need full re-render
+  // Text input changes (address/name) → patch only to preserve focus
+  if (field === 'shipping' || field === 'payment') {
+    renderSlots();
+  } else {
+    _patchCheckoutUI(slot);
+  }
+}
+
+function _patchCheckoutUI(slot) {
+  const co = slot.checkout;
+  const isTakeAway = co.shipping === 0;
+  const subtotal = slot.items.reduce((s, item) => s + itemPrice(item), 0);
+  const total = subtotal + (co.shipping ?? 0);
+  const canConfirm = co.name && co.shipping !== null && (isTakeAway || co.address);
+  // Update total amount display
+  const totalEl = document.querySelector(`#slot-${slot.id} .checkout-total-amount`);
+  if (totalEl) totalEl.textContent = fmtPrice(total);
+  // Update confirm button disabled state
+  const confirmBtn = document.querySelector(`#slot-${slot.id} .checkout .btn.primary.full`);
+  if (confirmBtn) confirmBtn.disabled = !canConfirm;
+  // Update slot header total
+  const headerTotal = document.querySelector(`#slot-${slot.id} .slot-total`);
+  if (headerTotal) headerTotal.textContent = fmtPrice(calcSlotTotal(slot));
+}
+
+function confirmOrder(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  const co = slot.checkout;
+  const isTakeAway = co.shipping === 0;
+  if (!co.name) { showToast('Ingresá el nombre del cliente', 'warning'); return; }
+  if (co.shipping === null) { showToast('Seleccioná el costo de envío', 'warning'); return; }
+  if (!isTakeAway && !co.address) { showToast('Ingresá la dirección', 'warning'); return; }
+  slot.ticketId = generateTicketId(co.name);
+  slot.state = 'pending';
+  slot.wizard = null;
+  renderSlots();
+  showToast(`Pedido ${slot.ticketId} confirmado`, 'success');
+}
+
+function markPaid(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  const total = calcSlotTotal(slot);
+  // Transfer to orders panel
+  const order = {
+    id: slot.ticketId,
+    ticketId: slot.ticketId,
+    name: slot.checkout.name || '',
+    address: slot.checkout.address,
+    shipping: slot.checkout.shipping,
+    payment: slot.checkout.payment,
+    items: [...slot.items],
+    total: total,
+    status: 'PREPARING',
+    createdAt: new Date(),
+    expanded: false
+  };
+  orders.unshift(order);
+  // Reset slot
+  resetSlot(slotId);
+  renderOrders();
+  showToast(`Pedido ${order.ticketId} en preparación`, 'success');
+}
+
+function printTicket(slotId) {
+  const slot = slots.find(s => s.id === slotId);
+  if (!slot) return;
+  const ticket = buildTicketText(slot.ticketId, slot.items, calcSlotTotal(slot), slot.checkout);
+  showModal('Ticket de impresión', ticket, () => {});
+  document.getElementById('modal-body').style.whiteSpace = 'pre';
+  document.getElementById('modal-body').style.fontFamily = "Consolas, monospace";
+  document.getElementById('modal-body').style.fontSize = '12px';
+  document.getElementById('modal-confirm-btn').style.display = 'none';
+}
+
+function buildTicketText(ticketId, items, total, co) {
+  const lines = [
+    'THE BEST BURGERS',
+    '-------------------------',
+  ];
+  items.forEach(item => {
+    const label = itemLabel(item);
+    if (item.isPromo) {
+      const normalP = PRICES[item.variantId] || 0;
+      const finalP  = promoPrice(item.variantId);
+      const disc    = normalP - finalP;
+      const extrasPrice = (item.extras || []).reduce((s, eid) => s + (PRICES[eid] || 0), 0);
+      // Line 1: normal price
+      const l1 = label, p1 = fmtPrice(normalP);
+      lines.push(l1 + ' '.repeat(Math.max(1, 25 - l1.length - p1.length)) + p1);
+      // Line 2: discount
+      const l2 = '  >> Descuento Promo', p2 = '-' + fmtPrice(disc);
+      lines.push(l2 + ' '.repeat(Math.max(1, 25 - l2.length - p2.length)) + p2);
+      // Extras
+      if (extrasPrice > 0) {
+        (item.extras || []).forEach(eid => {
+          const extra = getExtraById(eid);
+          if (extra) {
+            const eName = '  + ' + extra.name;
+            const ePrice = fmtPrice(PRICES[eid] || extra.price);
+            lines.push(eName + ' '.repeat(Math.max(1, 25 - eName.length - ePrice.length)) + ePrice);
+          }
+        });
+      }
+    } else {
+      const price = fmtPrice(itemPrice(item));
+      const pad = 25 - label.length - price.length;
+      lines.push(label + ' '.repeat(Math.max(1,pad)) + price);
+      if (item.extras && item.extras.length > 0) {
+        item.extras.forEach(eid => {
+          const extra = getExtraById(eid);
+          if (extra) {
+            const eName = '  + ' + extra.name;
+            const ePrice = fmtPrice(PRICES[eid] || extra.price);
+            const ePad = 25 - eName.length - ePrice.length;
+            lines.push(eName + ' '.repeat(Math.max(1, ePad)) + ePrice);
+          }
+        });
+      }
+    }
+  });
+  const shippingLabel = 'Envío';
+  const shippingPrice = fmtPrice(co.shipping || 0);
+  const shippingPad = 25 - shippingLabel.length - shippingPrice.length;
+  lines.push(shippingLabel + ' '.repeat(Math.max(1,shippingPad)) + shippingPrice);
+  lines.push('');
+  lines.push('-------------------------');
+  const totalLabel = 'TOTAL';
+  const totalPrice = fmtPrice(total);
+  const totalPad = 25 - totalLabel.length - totalPrice.length;
+  lines.push(totalLabel + ' '.repeat(Math.max(1,totalPad)) + totalPrice);
+  lines.push('');
+  lines.push('DIRECCIÓN: ' + (co.address || '-'));
+  if (co.name) lines.push('NOMBRE: ' + co.name);
+  else lines.push('TICKET: ' + ticketId);
+  lines.push('');
+  lines.push('Gracias por su compra.');
+  return lines.join('\n');
+}
+
+// ══════════════════════════════════════════════════════════════
+// ORDERS PANEL
+// ══════════════════════════════════════════════════════════════
+function switchOrderTab(tab, el) {
+  currentOrderTab = tab;
+  document.querySelectorAll('.orders-panel .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderOrders();
+}
+
+function renderOrders() {
+  const container = document.getElementById('orders-list');
+  const filtered = orders.filter(o => {
+    if (currentOrderTab === 'active') return o.status !== 'COMPLETED';
+    return o.status === 'COMPLETED';
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">${currentOrderTab === 'active' ? 'Los pedidos confirmados<br>aparecerán aquí' : 'No hay pedidos entregados hoy'}</div></div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(order => buildOrderCard(order)).join('');
+}
+
+function buildOrderCard(order) {
+  const statusMap = { PREPARING: 'preparing', SENT: 'sent', COMPLETED: 'completed' };
+  const statusLabel = { PREPARING: 'Preparando', SENT: 'Enviado', COMPLETED: 'Completado' };
+  const nextAction = { PREPARING: { label: 'Marcar Enviado →', action: 'SENT' }, SENT: { label: 'Marcar Entregado ✓', action: 'COMPLETED' } };
+  const itemsSummary = order.items.map(item => itemLabel(item)).join(', ');
+
+  return `
+    <div class="order-card ${order.expanded ? 'expanded' : ''}" id="ocard-${order.id}">
+      <div class="order-card-header" onclick="toggleOrderCard('${order.id}')">
+        <div>
+          <div class="order-ticket">#${order.ticketId}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${itemsSummary.slice(0,30)}${itemsSummary.length > 30 ? '…' : ''}</div>
+        </div>
+        <span class="status-badge ${statusMap[order.status]}">${statusLabel[order.status]}</span>
+        <div class="order-total-sm">${fmtPrice(order.total)}</div>
+      </div>
+      <div class="order-detail">
+        <div class="order-detail-body">
+          <div class="order-detail-items">
+            ${order.items.map(item => `
+              <div class="order-detail-item">
+                <span>${itemLabel(item)}${item.isPromo ? ' <span class="promo-badge">PROMO</span>' : ''}</span>
+                <span ${item.isPromo ? 'class="promo-price"' : ''}>${fmtPrice(itemPrice(item))}</span>
+              </div>
+              ${(item.extras||[]).map(eid => {
+                const extra = getExtraById(eid);
+                return extra ? `<div class="order-detail-item"><span style="padding-left:12px;color:var(--text-muted)">+ ${extra.name}</span><span>${fmtPrice(PRICES[eid]||extra.price)}</span></div>` : '';
+              }).join('')}
+            `).join('')}
+            <div class="order-detail-item" style="border-top:1px solid var(--border);padding-top:4px;margin-top:4px;">
+              <span>Envío</span><span>${fmtPrice(order.shipping)}</span>
+            </div>
+            <div class="order-detail-item">
+              <span style="font-weight:500;color:var(--text-primary)">Total</span>
+              <span style="color:var(--accent);font-weight:500">${fmtPrice(order.total)}</span>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);">
+            📍 ${order.address} ${order.name ? '· 👤 ' + order.name : ''}
+            · ${order.payment === 'CASH' ? '💵 Efectivo' : '📲 Transferencia'}
+          </div>
+          <div class="order-actions">
+            <button class="btn sm" onclick="printOrderTicket('${order.id}')">🖨 Imprimir</button>
+            ${nextAction[order.status] ? `<button class="btn sm primary" onclick="advanceOrder('${order.id}', '${nextAction[order.status].action}')">${nextAction[order.status].label}</button>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleOrderCard(orderId) {
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+  order.expanded = !order.expanded;
+  renderOrders();
+}
+
+function advanceOrder(orderId, newStatus) {
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+  order.status = newStatus;
+  renderOrders();
+  if (newStatus === 'COMPLETED') showToast(`Pedido ${order.ticketId} completado`, 'success');
+}
+
+function printOrderTicket(orderId) {
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+  const ticket = buildTicketText(order.ticketId, order.items, order.total, { address: order.address, name: order.name, shipping: order.shipping });
+  showModal('Ticket — ' + order.ticketId, ticket, () => {});
+  document.getElementById('modal-body').style.whiteSpace = 'pre';
+  document.getElementById('modal-body').style.fontFamily = "Consolas, monospace";
+  document.getElementById('modal-body').style.fontSize = '12px';
+  document.getElementById('modal-confirm-btn').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════════════
+function renderSettings() {
+  // Burgers
+  const burgerContainer = document.getElementById('burger-prices');
+  burgerContainer.innerHTML = MENU.burgers.map(b => b.variants.map(v => `
+    <div class="price-row">
+      <div class="price-name">${b.name} — ${v.name}</div>
+      <input class="price-input" type="number" id="price-${v.id}" value="${PRICES[v.id] || v.price}" min="0" step="100">
+    </div>`).join('')).join('');
+
+  const bevContainer = document.getElementById('beverage-prices');
+  bevContainer.innerHTML = MENU.beverages.map(b => b.variants.map(v => `
+    <div class="price-row">
+      <div class="price-name">${b.name} — ${v.name}</div>
+      <input class="price-input" type="number" id="price-${v.id}" value="${PRICES[v.id] || v.price}" min="0" step="100">
+    </div>`).join('')).join('');
+
+  const extraContainer = document.getElementById('extra-prices');
+  extraContainer.innerHTML = MENU.extras.map(e => `
+    <div class="price-row">
+      <div class="price-name">${e.name}</div>
+      <input class="price-input" type="number" id="price-${e.id}" value="${PRICES[e.id] || e.price}" min="0" step="100">
+    </div>`).join('');
+
+  renderPromos();
+
+  // Collapse all sections on first load (only if not already touched)
+  ['burgers','beverages','extras','promos'].forEach(id => {
+    const tableId = { burgers:'burger-prices', beverages:'beverage-prices', extras:'extra-prices', promos:'promos-list' };
+    const table   = document.getElementById(tableId[id]);
+    const chevron = document.getElementById('chevron-' + id);
+    if (table && !table._wasOpened) {
+      table.classList.add('collapsed');
+      if (chevron) chevron.classList.add('collapsed');
+    }
+  });
+}
+
+function savePrices() {
+  [...MENU.burgers, ...MENU.beverages].forEach(p => p.variants.forEach(v => {
+    const el = document.getElementById('price-' + v.id);
+    if (el) PRICES[v.id] = Number(el.value) || PRICES[v.id];
+  }));
+  MENU.extras.forEach(e => {
+    const el = document.getElementById('price-' + e.id);
+    if (el) PRICES[e.id] = Number(el.value) || PRICES[e.id];
+  });
+  showToast('Precios actualizados correctamente', 'success');
+}
+
+// ══════════════════════════════════════════════════════════════
+// CAJA / PIN
+// ══════════════════════════════════════════════════════════════
+function showPinOverlay() {
+  document.getElementById('pin-overlay').style.display = 'flex';
+  document.querySelector('.caja-content').classList.remove('visible');
+  pinBuffer = '';
+  updatePinDots();
+}
+
+function pinInput(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(pinSubmit, 200);
+}
+
+function pinDelete() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+}
+
+function pinSubmit() {
+  if (pinBuffer === PIN_CORRECT) {
+    cajaUnlocked = true;
+    document.getElementById('pin-overlay').style.display = 'none';
+    document.querySelector('.caja-content').classList.add('visible');
+    renderCaja();
+  } else {
+    document.getElementById('pin-error').textContent = 'PIN incorrecto';
+    pinBuffer = '';
+    updatePinDots();
+    setTimeout(() => document.getElementById('pin-error').textContent = '', 1500);
+  }
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('dot-' + i);
+    if (dot) dot.classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function lockCaja() {
+  cajaUnlocked = false;
+  showPinOverlay();
+}
+
+function setPeriod(period, el) {
+  cajaCurrentPeriod = period;
+  document.querySelectorAll('#caja-content .period-tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderCaja();
+}
+
+function renderCaja() {
+  const now = new Date();
+  let filtered = orders;
+
+  if (cajaCurrentPeriod === 'day') {
+    filtered = orders.filter(o => {
+      const d = new Date(o.createdAt);
+      return d.toDateString() === now.toDateString();
+    });
+  } else if (cajaCurrentPeriod === 'week') {
+    const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+    filtered = orders.filter(o => new Date(o.createdAt) >= weekAgo);
+  } else {
+    const monthAgo = new Date(now); monthAgo.setMonth(now.getMonth() - 1);
+    filtered = orders.filter(o => new Date(o.createdAt) >= monthAgo);
+  }
+
+  const revenue = filtered.reduce((s, o) => s + o.total, 0);
+  const count = filtered.length;
+  const avg = count > 0 ? Math.round(revenue / count) : 0;
+  const cashCount = filtered.filter(o => o.payment === 'CASH').length;
+  const transferCount = filtered.filter(o => o.payment === 'TRANSFER').length;
+
+  document.getElementById('kpi-revenue').textContent = fmtPrice(revenue);
+  document.getElementById('kpi-orders').textContent = count;
+  document.getElementById('kpi-avg').textContent = fmtPrice(avg);
+  document.getElementById('kpi-methods').textContent = `${cashCount} / ${transferCount}`;
+
+  const periodLabel = { day: 'Hoy', week: 'Últimos 7 días', month: 'Último mes' };
+  document.getElementById('kpi-revenue-sub').textContent = periodLabel[cajaCurrentPeriod];
+
+  const tableEl = document.getElementById('caja-orders-table');
+  if (filtered.length === 0) {
+    tableEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">Sin pedidos en el período seleccionado</div>';
+    return;
+  }
+  tableEl.innerHTML = `
+    <table style="width:100%;font-size:13px;border-collapse:collapse;">
+      <thead>
+        <tr style="background:var(--bg-tertiary);">
+          <th style="padding:8px 16px;text-align:left;color:var(--text-secondary);font-weight:500;">Ticket</th>
+          <th style="padding:8px 16px;text-align:left;color:var(--text-secondary);font-weight:500;">Cliente</th>
+          <th style="padding:8px 16px;text-align:left;color:var(--text-secondary);font-weight:500;">Estado</th>
+          <th style="padding:8px 16px;text-align:left;color:var(--text-secondary);font-weight:500;">Pago</th>
+          <th style="padding:8px 16px;text-align:right;color:var(--text-secondary);font-weight:500;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered.map(o => `
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px 16px;font-family:Consolas,monospace;color:var(--text-primary);">#${o.ticketId}</td>
+            <td style="padding:8px 16px;color:var(--text-secondary);">${o.name || '—'}</td>
+            <td style="padding:8px 16px;">
+              <span class="status-badge ${o.status.toLowerCase()}">${o.status}</span>
+            </td>
+            <td style="padding:8px 16px;color:var(--text-secondary);">${o.payment === 'CASH' ? 'Efectivo' : 'Transferencia'}</td>
+            <td style="padding:8px 16px;text-align:right;font-family:Consolas,monospace;color:var(--accent);">${fmtPrice(o.total)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADDRESS CALCULATOR — La Plata
+// ══════════════════════════════════════════════════════════════
+let addrType = 'street'; // 'street' | 'diag'
+
+function addrSetType(type) {
+  addrType = type;
+  document.getElementById('addr-type-street').classList.toggle('active', type === 'street');
+  document.getElementById('addr-type-diag').classList.toggle('active', type === 'diag');
+  // Update placeholder hints
+  document.getElementById('addr-street-num').placeholder = type === 'diag' ? '73' : '14';
+  addrCalc();
+}
+
+function addrCalc() {
+  const streetRaw = document.getElementById('addr-street-num').value.trim();
+  const doorRaw   = document.getElementById('addr-door-num').value.trim();
+  const resultEl  = document.getElementById('addr-result');
+
+  // Both fields must have a value
+  if (!streetRaw || !doorRaw) {
+    resultEl.className = 'addr-result empty';
+    resultEl.textContent = 'Ingresá calle y puerta';
+    return;
+  }
+
+  const streetNum = parseInt(streetRaw, 10);
+  const doorNum   = parseInt(doorRaw, 10);
+
+  if (isNaN(streetNum) || isNaN(doorNum) || doorNum < 0 || streetNum < 1) {
+    resultEl.className = 'addr-result error';
+    resultEl.textContent = '⚠ Ingresá número de puerta válido';
+    return;
+  }
+
+  const base = Math.floor(doorNum / 100);
+  let c1, c2;
+
+  if (addrType === 'diag') {
+    // ── DIAGONAL ──────────────────────────────────
+    let calleR;
+    if ([73, 74, 79, 80].includes(streetNum))      calleR = base - 5;
+    else if ([75, 76].includes(streetNum))          calleR = base + 14;
+    else if ([77, 78].includes(streetNum))          calleR = base + 1;
+    else {
+      resultEl.className = 'addr-result error';
+      resultEl.textContent = '⚠ Diagonal no reconocida (73-80)';
+      return;
+    }
+    c1 = calleR;
+    c2 = calleR + 1;
+
+  } else {
+    // ── CALLE / AVENIDA ───────────────────────────
+    const grupo1 = (streetNum >= 1 && streetNum <= 31) || (streetNum >= 115 && streetNum <= 122);
+    const grupo2 = streetNum >= 32 && streetNum <= 90;
+
+    if (grupo1) {
+      let calleR = (base * 2) + 32;
+      if (calleR > 52) calleR = (base * 2) + 33;
+      c1 = calleR;
+      c2 = calleR + 1;
+    } else if (grupo2) {
+      const calleR = (base * 2) - 5;
+      c1 = calleR;
+      c2 = calleR + 1;
+    } else {
+      resultEl.className = 'addr-result error';
+      resultEl.textContent = '⚠ Calle fuera de rango (1-90, 115-122)';
+      return;
+    }
+  }
+
+  // Sanity check — result should be positive
+  if (c1 < 1 || c2 < 1) {
+    resultEl.className = 'addr-result error';
+    resultEl.textContent = '⚠ Ingresá número de puerta válido';
+    return;
+  }
+
+  resultEl.className = 'addr-result';
+  resultEl.textContent = `📍 Entre ${c1} y ${c2}`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SETTINGS — COLLAPSIBLE SECTIONS
+// ══════════════════════════════════════════════════════════════
+function toggleSection(id) {
+  const tableId = { burgers: 'burger-prices', beverages: 'beverage-prices', extras: 'extra-prices', promos: 'promos-list' };
+  const table = document.getElementById(tableId[id]);
+  const chevron = document.getElementById('chevron-' + id);
+  if (!table || !chevron) return;
+  const isCollapsed = table.classList.toggle('collapsed');
+  chevron.classList.toggle('collapsed', isCollapsed);
+  table._wasOpened = !isCollapsed;
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROMOTIONS — CRUD & UI
+// ══════════════════════════════════════════════════════════════
+
+// Build a flat list of all burger variants for the selector
+function allBurgerVariants() {
+  const list = [];
+  MENU.burgers.forEach(b => b.variants.forEach(v => {
+    list.push({ productName: b.name, variantName: v.name, variantId: v.id });
+  }));
+  return list;
+}
+
+function renderPromos() {
+  const inner = document.getElementById('promos-inner');
+  if (!inner) return;
+  const entries = Object.entries(PROMOS);
+  if (entries.length === 0) {
+    inner.innerHTML = '<div style="padding:12px 18px;font-size:13px;color:var(--text-muted);">Sin promociones configuradas.</div>';
+    return;
+  }
+  inner.innerHTML = entries.map(([vid, promo]) => {
+    const found = getVariantById(vid);
+    if (!found) return '';
+    const normalP = PRICES[vid] || 0;
+    const finalP  = Math.max(0, normalP - promo.discount);
+    const isActive = promo.active;
+    return `
+      <div class="price-row" style="align-items:center;gap:10px;opacity:${isActive ? '1' : '0.5'};">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:500;color:var(--text-primary);">${found.product.name} ${found.variant.name}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+            ${fmtPrice(normalP)} − ${fmtPrice(promo.discount)} = <span style="color:var(--success);font-weight:600;">${fmtPrice(finalP)}</span>
+          </div>
+        </div>
+        <span class="status-badge ${isActive ? 'completed' : 'pending'}">${isActive ? 'Activa' : 'Pausada'}</span>
+        <button class="btn sm" onclick="togglePromo('${vid}')" title="${isActive ? 'Pausar' : 'Activar'}">${isActive ? '⏸' : '▶'}</button>
+        <button class="btn sm danger" onclick="deletePromo('${vid}')">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function togglePromo(variantId) {
+  if (!PROMOS[variantId]) return;
+  PROMOS[variantId].active = !PROMOS[variantId].active;
+  renderPromos();
+  renderSlots();
+  showToast(PROMOS[variantId].active ? 'Promoción activada' : 'Promoción pausada', PROMOS[variantId].active ? 'success' : 'warning');
+}
+
+function deletePromo(variantId) {
+  delete PROMOS[variantId];
+  renderPromos();
+  renderSlots();
+  showToast('Promoción eliminada', 'warning');
+}
+
+// Promo creator state
+let _promoState = { variantId: null, discount: 0 };
+
+function openPromoCreator() {
+  _promoState = { variantId: null, discount: 0 };
+  renderPromoCreator();
+}
+
+function renderPromoCreator() {
+  const inner = document.getElementById('promos-inner');
+  if (!inner) return;
+  const variants = allBurgerVariants();
+  const vid = _promoState.variantId;
+  const normalP = vid ? (PRICES[vid] || 0) : 0;
+  const disc    = _promoState.discount;
+  const finalP  = vid ? Math.max(0, normalP - disc) : 0;
+
+  inner.innerHTML = `
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px;border-bottom:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:500;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;">Nueva Promoción</div>
+
+      <div class="form-field">
+        <div class="form-label">Producto y Variante</div>
+        <select class="form-input" onchange="promoSelectVariant(this.value)" style="cursor:pointer;">
+          <option value="">— Seleccioná —</option>
+          ${variants.map(v => `<option value="${v.variantId}" ${vid === v.variantId ? 'selected' : ''}>${v.productName} — ${v.variantName}</option>`).join('')}
+        </select>
+      </div>
+
+      ${vid ? `
+      <div class="form-field">
+        <div class="form-label">Descuento</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn sm" onclick="promoAdjustDiscount(-100)" style="font-size:16px;padding:4px 14px;">−</button>
+          <input
+            class="form-input" type="number" id="promo-disc-input"
+            value="${disc}" min="0" max="${normalP}" step="100"
+            style="text-align:center;flex:1;font-family:Consolas,monospace;"
+            oninput="promoSetDiscount(Number(this.value))">
+          <button class="btn sm" onclick="promoAdjustDiscount(100)" style="font-size:16px;padding:4px 14px;">+</button>
+        </div>
+      </div>
+
+      <div style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:var(--text-secondary);">Precio normal</span>
+          <span id="pc-normal" style="font-family:Consolas,monospace;">${fmtPrice(normalP)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+          <span style="color:var(--text-secondary);">Descuento</span>
+          <span id="pc-disc" style="font-family:Consolas,monospace;color:var(--danger);">−${fmtPrice(disc)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:600;border-top:1px solid var(--border);padding-top:6px;">
+          <span>Precio Promo</span>
+          <span id="pc-final" style="font-family:Consolas,monospace;color:var(--success);">${fmtPrice(finalP)}</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button class="btn sm secondary" onclick="renderPromos()">Cancelar</button>
+        <button class="btn sm primary full" id="promo-save-btn" onclick="savePromo()" ${disc <= 0 ? 'disabled' : ''}>
+          Guardar Promoción
+        </button>
+      </div>
+      ` : ''}
+    </div>`;
+}
+
+function promoSelectVariant(variantId) {
+  _promoState.variantId = variantId || null;
+  _promoState.discount = 0;
+  renderPromoCreator();
+}
+
+function promoAdjustDiscount(delta) {
+  const vid = _promoState.variantId;
+  const max = vid ? (PRICES[vid] || 0) : 0;
+  _promoState.discount = Math.max(0, Math.min(max, _promoState.discount + delta));
+  // Update input value and live calc without full re-render (preserves focus)
+  const inp = document.getElementById('promo-disc-input');
+  if (inp) inp.value = _promoState.discount;
+  _patchPromoCalc();
+}
+
+function promoSetDiscount(val) {
+  const vid = _promoState.variantId;
+  const max = vid ? (PRICES[vid] || 0) : 0;
+  _promoState.discount = Math.max(0, Math.min(max, isNaN(val) ? 0 : val));
+  _patchPromoCalc();
+}
+
+function _patchPromoCalc() {
+  const vid = _promoState.variantId;
+  const normalP = PRICES[vid] || 0;
+  const disc    = _promoState.discount;
+  const finalP  = Math.max(0, normalP - disc);
+  const elDisc  = document.getElementById('pc-disc');
+  const elFinal = document.getElementById('pc-final');
+  const saveBtn = document.getElementById('promo-save-btn');
+  if (elDisc)  elDisc.textContent  = '−' + fmtPrice(disc);
+  if (elFinal) elFinal.textContent = fmtPrice(finalP);
+  if (saveBtn) saveBtn.disabled = disc <= 0;
+}
+
+function savePromo() {
+  const { variantId, discount } = _promoState;
+  if (!variantId || discount <= 0) { showToast('Seleccioná variante y descuento mayor a $0', 'warning'); return; }
+  PROMOS[variantId] = { discount, active: true };
+  renderPromos();
+  renderSlots();
+  showToast('Promoción guardada', 'success');
+}
+
+
+renderSlots();
+
+// Keyboard support for PIN
+document.addEventListener('keydown', (e) => {
+  // Only active when CAJA view is visible and pin overlay is shown
+  const cajaView = document.getElementById('view-caja');
+  const pinOverlay = document.getElementById('pin-overlay');
+  if (!cajaView.classList.contains('active')) return;
+  if (pinOverlay.style.display === 'none') return;
+  if (e.key >= '0' && e.key <= '9') { pinInput(e.key); e.preventDefault(); }
+  else if (e.key === 'Backspace' || e.key === 'Delete') { pinDelete(); e.preventDefault(); }
+  else if (e.key === 'Enter') { pinSubmit(); e.preventDefault(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id       Int    @id @default(1)
+  password String @default("1234") // the default PIN is 1234
+}
+
+model ProductPrice {
+  id    String @id // e.g. "cheese-s", "ex-bacon"
+  price Int
+}
+
+model Promotion {
+  variantId String  @id
+  discount  Int
+  active    Boolean @default(true)
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  ticketId      String
+  customerName  String
+  address       String
+  paymentMethod String      // "CASH" or "TRANSFER"
+  status        String      // "PENDING", "PREPARING", "SENT", "COMPLETED"
+  total         Int
+  shipping      Int
+  createdAt     DateTime    @default(now())
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id         Int     @id @default(autoincrement())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId  String
+  label      String
+  isPromo    Boolean @default(false)
+  price      Int
+  extrasJson String  @default("[]") // JSON string of extra IDs
+}
