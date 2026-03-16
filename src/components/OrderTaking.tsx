@@ -387,7 +387,18 @@ function PendingSlot({ slot }: { slot: SlotState }) {
       });
     } catch {
       console.warn('Backend unavailable, saving order to localStorage');
-      const newOrder = { ...orderBody, id: Date.now().toString(), createdAt: new Date().toISOString() };
+      const newOrder = { 
+        ...orderBody, 
+        id: Date.now().toString(), 
+        createdAt: new Date().toISOString(),
+        name: slot.checkout.name,
+        payment: slot.checkout.payment,
+        expanded: false
+      };
+      // remove the incorrect duplicated keys that were meant for the API
+      delete (newOrder as any).customerName;
+      delete (newOrder as any).paymentMethod;
+      
       const localO = localStorage.getItem('__best_burgers_orders');
       const ordersArr = localO ? JSON.parse(localO) : [];
       ordersArr.unshift(newOrder);

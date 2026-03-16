@@ -111,7 +111,14 @@ export const useStore = create<AppState>((set, get) => ({
         if (localP) Object.assign(pmap, JSON.parse(localP));
 
         const localPr = localStorage.getItem('__best_burgers_promos');
-        const promomap = localPr ? JSON.parse(localPr) : {};
+        const promomap: Record<string, PromoData> = localPr ? JSON.parse(localPr) : {};
+        if (Object.keys(promomap).length === 0) {
+          // Initialize some default promos for demo purposes
+          const standardBurger = MENU.burgers.find(b => b.name === 'Classic')?.variants.find(v => v.name === 'Simple');
+          if (standardBurger) {
+            promomap[standardBurger.id] = { variantId: standardBurger.id, discount: 1500, active: true };
+          }
+        }
 
         set({ prices: pmap, promos: promomap });
       });

@@ -151,19 +151,52 @@ export function Settings() {
           </div>
 
           <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>NUEVA PROMOCIÓN</div>
+            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Nueva Promoción</div>
             <div className="form-field">
-              <select className="form-input" value={promoState.variantId} onChange={e => setPromoState(p => ({ ...p, variantId: e.target.value }))}>
-                <option value="">— Seleccioná producto —</option>
+              <div className="form-label">Producto y Variante</div>
+              <select className="form-input" value={promoState.variantId} onChange={e => setPromoState({ variantId: e.target.value, discount: 0 })} style={{ cursor: 'pointer' }}>
+                <option value="">— Seleccioná —</option>
                 {allBurgerVariants.map(v => <option key={v.id} value={v.id}>{v.p} — {v.v}</option>)}
               </select>
             </div>
-            {promoState.variantId && (
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input className="form-input" type="number" value={promoState.discount} onChange={e => setPromoState(p => ({ ...p, discount: Number(e.target.value) }))} />
-                <button className="btn primary" onClick={savePromo}>Agregar Promo</button>
-              </div>
-            )}
+            {promoState.variantId && (() => {
+              const normalP = prices[promoState.variantId] || 0;
+              const disc = promoState.discount;
+              const finalP = Math.max(0, normalP - disc);
+              
+              return (
+                <>
+                  <div className="form-field">
+                    <div className="form-label">Descuento</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button className="btn sm" onClick={() => setPromoState(p => ({ ...p, discount: Math.max(0, p.discount - 100) }))} style={{ fontSize: '16px', padding: '4px 14px' }}>−</button>
+                      <input className="form-input" type="number" value={disc} min={0} max={normalP} step={100} onChange={e => setPromoState(p => ({ ...p, discount: Math.max(0, Math.min(normalP, Number(e.target.value) || 0)) }))} style={{ textAlign: 'center', flex: 1, fontFamily: 'Consolas, monospace' }} />
+                      <button className="btn sm" onClick={() => setPromoState(p => ({ ...p, discount: Math.min(normalP, p.discount + 100) }))} style={{ fontSize: '16px', padding: '4px 14px' }}>+</button>
+                    </div>
+                  </div>
+                  
+                  <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Precio normal</span>
+                      <span style={{ fontFamily: 'Consolas, monospace' }}>{fmtPrice(normalP)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Descuento</span>
+                      <span style={{ fontFamily: 'Consolas, monospace', color: 'var(--danger)' }}>−{fmtPrice(disc)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 600, borderTop: '1px solid var(--border)', paddingTop: '6px' }}>
+                      <span>Precio Promo</span>
+                      <span style={{ fontFamily: 'Consolas, monospace', color: 'var(--success)' }}>{fmtPrice(finalP)}</span>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn sm secondary" onClick={() => setPromoState({ variantId: '', discount: 0 })}>Cancelar</button>
+                    <button className="btn sm primary full" onClick={savePromo} disabled={disc <= 0}>Guardar Promoción</button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
