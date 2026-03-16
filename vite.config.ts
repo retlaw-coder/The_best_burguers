@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: '/pos-system/',
+  base: '/The_best_burguers/',
   plugins: [
     react(),
     tailwindcss(),

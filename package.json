@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "homepage": "https://walter.github.io/pos-system",
+  "homepage": "https://retlaw-coder.github.io/The_best_burguers",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
