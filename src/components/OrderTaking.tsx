@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStore, SlotState } from '../store/store';
 import { MENU, fmtPrice, getVariantById, getExtraById } from '../constants/menu';
+import { buildTicketText } from '../utils/ticket';
 
 export function OrderTaking() {
   const slots = useStore(state => state.slots);
@@ -355,7 +356,7 @@ function Checkout({ slot, calcTotal }: { slot: SlotState, calcTotal: () => numbe
 }
 
 function PendingSlot({ slot }: { slot: SlotState }) {
-  const { updateSlot, resetSlot, prices, promos, fetchOrders } = useStore();
+  const { updateSlot, resetSlot, prices, promos, fetchOrders, openModal } = useStore();
   
   const calcTotal = () => {
     return slot.items.reduce((sum, item) => {
@@ -431,7 +432,7 @@ function PendingSlot({ slot }: { slot: SlotState }) {
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button className="btn sm primary" onClick={markPaid}>✓ Marcar pagado</button>
-          <button className="btn sm" onClick={() => alert('Print ticket: ' + slot.ticketId)}>🖨 Imprimir</button>
+          <button className="btn sm" onClick={() => openModal('Ticket de impresión', buildTicketText(slot.ticketId!, slot.items, calcTotal(), slot.checkout, prices, promos))}>🖨 Imprimir</button>
           {slot._confirmCancelPending ? (
             <>
               <button className="btn sm danger" onClick={() => resetSlot(slot.id)}>Confirmar cancelación</button>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore, OrderData } from '../store/store';
 import { fmtPrice, getVariantById, getExtraById } from '../constants/menu';
+import { buildTicketText } from '../utils/ticket';
 
 export function ActiveOrders() {
   const [tab, setTab] = useState<'active'|'delivered'>('active');
@@ -36,7 +37,7 @@ export function ActiveOrders() {
 }
 
 function OrderCard({ order }: { order: OrderData }) {
-  const { setOrders, orders, prices, promos } = useStore();
+  const { setOrders, orders, prices, promos, openModal } = useStore();
 
   const statusMap = { PREPARING: 'preparing', SENT: 'sent', COMPLETED: 'completed' };
   const statusLabel = { PREPARING: 'Preparando', SENT: 'Enviado', COMPLETED: 'Completado' };
@@ -124,7 +125,7 @@ function OrderCard({ order }: { order: OrderData }) {
             <br />· {order.payment === 'CASH' ? '💵 Efectivo' : '📲 Transferencia'}
           </div>
           <div className="order-actions">
-            <button className="btn sm" onClick={() => alert('Print Order: ' + order.ticketId)}>🖨 Imprimir</button>
+            <button className="btn sm" onClick={() => openModal('Ticket — ' + order.ticketId, buildTicketText(order.ticketId, order.items, order.total, { address: order.address, name: order.name, shipping: order.shipping }, prices, promos))}>🖨 Imprimir</button>
             {nextAction[order.status] && (
               <button className="btn sm primary" onClick={() => advance(nextAction[order.status]!.action)}>
                 {nextAction[order.status]!.label}

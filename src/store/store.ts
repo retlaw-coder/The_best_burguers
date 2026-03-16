@@ -15,6 +15,7 @@ interface AppState {
   prices: Record<string, number>;
   promos: Record<string, PromoData>;
   cajaUnlocked: boolean;
+  modal: { title: string, content: string } | null;
   
   // Setters
   setPrices: (prices: Record<string, number>) => void;
@@ -22,6 +23,8 @@ interface AppState {
   setOrders: (orders: OrderData[]) => void;
   updateSlot: (id: number, data: Partial<SlotState>) => void;
   setCajaUnlocked: (val: boolean) => void;
+  openModal: (title: string, content: string) => void;
+  closeModal: () => void;
   
   // Slot Actions
   activateSlot: (id: number) => void;
@@ -43,11 +46,14 @@ export const useStore = create<AppState>((set, get) => ({
   prices: {},
   promos: {},
   cajaUnlocked: false,
+  modal: null,
 
   setPrices: (prices) => set({ prices }),
   setPromos: (promos) => set({ promos }),
   setOrders: (orders) => set({ orders }),
   setCajaUnlocked: (val) => set({ cajaUnlocked: val }),
+  openModal: (title, content) => set({ modal: { title, content } }),
+  closeModal: () => set({ modal: null }),
 
   updateSlot: (id, data) => set(state => ({
     slots: state.slots.map(s => s.id === id ? { ...s, ...data } : s)

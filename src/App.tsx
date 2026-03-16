@@ -17,7 +17,7 @@ function App() {
   const [doorNum, setDoorNum] = useState('');
   const [addrResult, setAddrResult] = useState({ text: 'Ingresá calle y puerta', error: false, empty: true });
 
-  const { fetchPricesAndPromos, fetchOrders } = useStore();
+  const { fetchPricesAndPromos, fetchOrders, modal, closeModal } = useStore();
 
   useEffect(() => {
     fetchPricesAndPromos();
@@ -93,6 +93,20 @@ function App() {
         <span id="global-toast-icon">✓</span>
         <span id="global-toast-msg"></span>
       </div>
+      
+      {modal && (
+        <div className="modal-overlay visible">
+          <div className="modal">
+            <div className="modal-title">{modal.title}</div>
+            <div className="modal-body" style={{ whiteSpace: 'pre', fontFamily: 'Consolas, monospace', fontSize: '13px', overflowY: 'auto', maxHeight: '60vh' }}>
+              {modal.content}
+            </div>
+            <div className="modal-actions">
+              <button className="btn primary full" onClick={closeModal} style={{ width: '100%' }}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
