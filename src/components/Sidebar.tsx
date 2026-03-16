@@ -1,6 +1,20 @@
 import React from 'react';
 
-export function Sidebar({ collapsed, toggleSidebar, setView, currentView, addrType, setAddrType, streetNum, setStreetNum, doorNum, setDoorNum, addrResult }) {
+interface SidebarProps {
+  collapsed: boolean;
+  toggleSidebar: () => void;
+  setView: (view: string) => void;
+  currentView: string;
+  addrType: 'street' | 'diag';
+  setAddrType: (type: 'street' | 'diag') => void;
+  streetNum: string;
+  setStreetNum: (num: string) => void;
+  doorNum: string;
+  setDoorNum: (num: string) => void;
+  addrResult: { text: string; error: boolean; empty: boolean };
+}
+
+export function Sidebar({ collapsed, toggleSidebar, setView, currentView, addrType, setAddrType, streetNum, setStreetNum, doorNum, setDoorNum, addrResult }: SidebarProps) {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`} id="sidebar">
       <div className="sidebar-logo">
