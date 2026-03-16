@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore, OrderData } from '../store/store';
 import { fmtPrice } from '../constants/menu';
 
@@ -7,6 +7,8 @@ export function Caja() {
   const [pinBuffer, setPinBuffer] = useState('');
   const [pinError, setPinError] = useState('');
   const [period, setPeriod] = useState<'day'|'week'|'month'>('day');
+  const [pwdState, setPwdState] = useState({ current: '', next: '' });
+  const [showAuthSection, setShowAuthSection] = useState(false);
 
   const handleInput = async (d: string) => {
     if (pinBuffer.length >= 4) return;
@@ -37,6 +39,56 @@ export function Caja() {
         }
       }
       setPinBuffer('');
+    }
+  };
+
+  useEffect(() => {
+    if (cajaUnlocked) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= '0' && e.key <= '9') {
+        handleInput(e.key);
+      } else if (e.key === 'Backspace') {
+        setPinBuffer(p => p.slice(0, -1));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cajaUnlocked, pinBuffer]);
+
+  const changePassword = async () => {
+    if (!pwdState.current || !pwdState.next) return;
+    try {
+      const res = await fetch('/api/auth/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: pwdState.current, newPassword: pwdState.next })
+      });
+      const data = await res.json();
+      showToast(data.success, data.success ? 'Contraseña actualizada' : 'PIN actual incorrecto');
+      if (data.success) {
+        setPwdState({ current: '', next: '' });
+        setShowAuthSection(false);
+      }
+    } catch {
+      console.warn('Backend unavailable, simulating password change with localStorage');
+      const savedPin = localStorage.getItem('__best_burgers_pin') || '1234';
+      if (pwdState.current === savedPin) {
+        localStorage.setItem('__best_burgers_pin', pwdState.next);
+        showToast(true, 'Contraseña actualizada (Local)');
+        setPwdState({ current: '', next: '' });
+        setShowAuthSection(false);
+      } else {
+        showToast(false, 'PIN actual incorrecto (Local)');
+      }
+    }
+  };
+
+  const showToast = (success: boolean, msg: string) => {
+    const el = document.getElementById('global-toast');
+    if (el) {
+      el.className = `toast visible ${success ? 'success' : 'warning'}`;
+      document.getElementById('global-toast-msg')!.textContent = msg;
+      setTimeout(() => el.className='toast', 2500);
     }
   };
 
@@ -81,6 +133,7 @@ export function Caja() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <h2 style={{ fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '24px', letterSpacing: '1px', color: 'var(--accent)' }}>Módulo Caja</h2>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button className="btn sm" onClick={() => setShowAuthSection(!showAuthSection)}>⚙️ Seguridad</button>
           <div className="period-tabs">
             <div className={`tab ${period === 'day' ? 'active' : ''}`} onClick={() => setPeriod('day')}>Hoy</div>
             <div className={`tab ${period === 'week' ? 'active' : ''}`} onClick={() => setPeriod('week')}>Semana</div>
@@ -89,6 +142,25 @@ export function Caja() {
           <button className="btn sm danger" onClick={() => setCajaUnlocked(false)}>Bloquear</button>
         </div>
       </div>
+
+      {showAuthSection && (
+        <div className="settings-section" style={{ marginTop: '16px' }}>
+          <div className="settings-section-header">Seguridad / Cambiar PIN</div>
+          <div className="price-table" style={{ padding: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div className="form-field">
+              <div className="form-label">PIN Actual</div>
+              <input className="form-input" type="password" value={pwdState.current} onChange={e => setPwdState(p => ({ ...p, current: e.target.value}))}/>
+            </div>
+            <div className="form-field">
+              <div className="form-label">Nuevo PIN</div>
+              <input className="form-input" type="password" value={pwdState.next} onChange={e => setPwdState(p => ({ ...p, next: e.target.value}))}/>
+            </div>
+            <div className="form-field" style={{ justifyContent: 'flex-end' }}>
+              <button className="btn primary" onClick={changePassword}>Cambiar PIN</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="kpi-grid">
         <div className="kpi-card accent">

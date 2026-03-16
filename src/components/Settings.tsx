@@ -7,8 +7,6 @@ export function Settings() {
   const [localPrices, setLocalPrices] = useState<Record<string, number>>({});
   const [sections, setSections] = useState({ burgers: false, beverages: false, extras: false, promos: false, auth: false });
   const [promoState, setPromoState] = useState({ variantId: '', discount: 0 });
-  const [pwdState, setPwdState] = useState({ current: '', next: '' });
-
   useEffect(() => { setLocalPrices(prices); }, [prices]);
 
   const toggle = (sec: string) => setSections(s => ({ ...s, [sec]: !(s as any)[sec] }));
@@ -75,38 +73,6 @@ export function Settings() {
     fetchPricesAndPromos();
   };
 
-  const changePassword = async () => {
-    if (!pwdState.current || !pwdState.next) return;
-    try {
-      const res = await fetch('/api/auth/password', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword: pwdState.current, newPassword: pwdState.next })
-      });
-      const data = await res.json();
-      showToast(data.success, data.success ? 'Contraseña actualizada' : 'PIN actual incorrecto');
-      if (data.success) setPwdState({ current: '', next: '' });
-    } catch {
-      console.warn('Backend unavailable, simulating password change with localStorage');
-      const savedPin = localStorage.getItem('__best_burgers_pin') || '1234';
-      if (pwdState.current === savedPin) {
-        localStorage.setItem('__best_burgers_pin', pwdState.next);
-        showToast(true, 'Contraseña actualizada (Local)');
-        setPwdState({ current: '', next: '' });
-      } else {
-        showToast(false, 'PIN actual incorrecto (Local)');
-      }
-    }
-  };
-
-  const showToast = (success: boolean, msg: string) => {
-    const el = document.getElementById('global-toast');
-    if (el) {
-      el.className = `toast visible ${success ? 'success' : 'warning'}`;
-      document.getElementById('global-toast-msg')!.textContent = msg;
-      setTimeout(() => el.className='toast', 2500);
-    }
-  };
 
   const allBurgerVariants = MENU.burgers.flatMap(b => b.variants.map(v => ({ p: b.name, v: v.name, id: v.id })));
 
@@ -202,24 +168,6 @@ export function Settings() {
         </div>
       </div>
 
-      <div className="settings-section">
-        <div className="settings-section-header" onClick={() => toggle('auth')}>
-          <span>Seguridad</span><span className={`section-chevron ${!sections.auth ? 'collapsed' : ''}`}>▲</span>
-        </div>
-        <div className={`price-table ${!sections.auth ? 'collapsed' : ''}`} style={{ padding: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <div className="form-field">
-            <div className="form-label">PIN Actual</div>
-            <input className="form-input" type="password" value={pwdState.current} onChange={e => setPwdState(p => ({ ...p, current: e.target.value}))}/>
-          </div>
-          <div className="form-field">
-            <div className="form-label">Nuevo PIN</div>
-            <input className="form-input" type="password" value={pwdState.next} onChange={e => setPwdState(p => ({ ...p, next: e.target.value}))}/>
-          </div>
-          <div className="form-field" style={{ justifyContent: 'flex-end' }}>
-            <button className="btn primary" onClick={changePassword}>Cambiar PIN</button>
-          </div>
-        </div>
-      </div>
 
     </div>
   );
