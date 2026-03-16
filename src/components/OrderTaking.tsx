@@ -380,11 +380,12 @@ function PendingSlot({ slot }: { slot: SlotState }) {
     };
 
     try {
-      await fetch('/api/orders', {
+      const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderBody)
       });
+      if (!res.ok) throw new Error();
     } catch {
       console.warn('Backend unavailable, saving order to localStorage');
       const newOrder = { 

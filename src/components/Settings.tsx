@@ -13,11 +13,12 @@ export function Settings() {
 
   const savePrices = async () => {
     try {
-      await fetch('/api/products', {
+      const res = await fetch('/api/products', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prices: localPrices })
       });
+      if (!res.ok) throw new Error();
     } catch {
       console.warn('Backend unavailable, saving prices to localStorage');
       localStorage.setItem('__best_burgers_prices', JSON.stringify(localPrices));
@@ -33,7 +34,8 @@ export function Settings() {
 
   const togglePromo = async (vid: string) => {
     try {
-      await fetch(`/api/promotions/${vid}/toggle`, { method: 'PUT' });
+      const res = await fetch(`/api/promotions/${vid}/toggle`, { method: 'PUT' });
+      if (!res.ok) throw new Error();
     } catch {
       console.warn('Backend unavailable, toggling promo in localStorage');
       setPromos({ ...promos, [vid]: { ...promos[vid], active: !promos[vid].active } });
@@ -44,7 +46,8 @@ export function Settings() {
   
   const deletePromo = async (vid: string) => {
     try {
-      await fetch(`/api/promotions/${vid}`, { method: 'DELETE' });
+      const res = await fetch(`/api/promotions/${vid}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
     } catch {
       console.warn('Backend unavailable, deleting promo from localStorage');
       const newPromos = { ...promos };
@@ -58,11 +61,12 @@ export function Settings() {
   const savePromo = async () => {
     if (!promoState.variantId || promoState.discount <= 0) return;
     try {
-      await fetch('/api/promotions', {
+      const res = await fetch('/api/promotions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ variantId: promoState.variantId, discount: promoState.discount, active: true })
       });
+      if (!res.ok) throw new Error();
     } catch {
       console.warn('Backend unavailable, saving promo to localStorage');
       const newPromos = { ...promos, [promoState.variantId]: { variantId: promoState.variantId, discount: promoState.discount, active: true } };

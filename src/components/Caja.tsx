@@ -22,6 +22,7 @@ export function Caja() {
           body: JSON.stringify({ password: newPin })
         });
         const data = await res.json();
+        if (!res.ok) throw new Error();
         if (data.success) {
           setCajaUnlocked(true);
         } else {
@@ -30,7 +31,7 @@ export function Caja() {
         }
       } catch {
         console.warn('Backend unavailable, checking PIN locally');
-        const savedPin = localStorage.getItem('__best_burgers_pin') || '1234';
+        const savedPin = '1234';
         if (newPin === savedPin) {
           setCajaUnlocked(true);
         } else {
@@ -63,6 +64,7 @@ export function Caja() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword: pwdState.current, newPassword: pwdState.next })
       });
+      if (!res.ok) throw new Error();
       const data = await res.json();
       showToast(data.success, data.success ? 'Contraseña actualizada' : 'PIN actual incorrecto');
       if (data.success) {
@@ -71,7 +73,7 @@ export function Caja() {
       }
     } catch {
       console.warn('Backend unavailable, simulating password change with localStorage');
-      const savedPin = localStorage.getItem('__best_burgers_pin') || '1234';
+      const savedPin = '1234';
       if (pwdState.current === savedPin) {
         localStorage.setItem('__best_burgers_pin', pwdState.next);
         showToast(true, 'Contraseña actualizada (Local)');

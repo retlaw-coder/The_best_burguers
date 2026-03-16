@@ -53,11 +53,12 @@ function OrderCard({ order }: { order: OrderData }) {
 
   const advance = async (newStatus: string) => {
     try {
-      await fetch(`/api/orders/${order.id}/status`, {
+      const res = await fetch(`/api/orders/${order.id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       });
+      if (!res.ok) throw new Error();
     } catch {
       console.warn('Backend unavailable, advancing order in localStorage');
       const localO = localStorage.getItem('__best_burgers_orders');
