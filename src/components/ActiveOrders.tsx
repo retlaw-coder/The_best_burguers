@@ -37,7 +37,8 @@ export function ActiveOrders() {
 }
 
 function OrderCard({ order }: { order: OrderData }) {
-  const { setOrders, orders, prices, promos, openModal } = useStore();
+  const { setOrders, orders, prices, promos, openModal, deleteOrder } = useStore();
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const statusMap = { PREPARING: 'preparing', SENT: 'sent', COMPLETED: 'completed' };
   const statusLabel = { PREPARING: 'Preparando', SENT: 'Enviado', COMPLETED: 'Completado' };
@@ -76,6 +77,12 @@ function OrderCard({ order }: { order: OrderData }) {
       const el = document.getElementById('global-toast');
       if (el) { el.className = 'toast visible success'; document.getElementById('global-toast-msg')!.textContent = `Pedido ${order.ticketId} completado`; setTimeout(() => el.className='toast', 2500); }
     }
+  };
+
+  const handleDelete = () => {
+    deleteOrder(order.id);
+    const el = document.getElementById('global-toast');
+    if (el) { el.className = 'toast visible success'; document.getElementById('global-toast-msg')!.textContent = `Pedido ${order.ticketId} eliminado`; setTimeout(() => el.className='toast', 2500); }
   };
 
   return (
@@ -130,6 +137,15 @@ function OrderCard({ order }: { order: OrderData }) {
               <button className="btn sm primary" onClick={() => advance(nextAction[order.status]!.action)}>
                 {nextAction[order.status]!.label}
               </button>
+            )}
+            {confirmDelete ? (
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: 'var(--danger)' }}>¿Eliminar?</span>
+                <button className="btn sm danger" onClick={handleDelete}>Sí</button>
+                <button className="btn sm" onClick={() => setConfirmDelete(false)}>No</button>
+              </div>
+            ) : (
+              <button className="btn sm danger" onClick={() => setConfirmDelete(true)} title="Eliminar pedido">🗑</button>
             )}
           </div>
         </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore, SlotState } from '../store/store';
 import { MENU, fmtPrice, getVariantById, getExtraById } from '../constants/menu';
 import { buildTicketText } from '../utils/ticket';
+import { PriceInput } from './PriceInput';
 
 export function OrderTaking() {
   const slots = useStore(state => state.slots);
@@ -57,7 +58,7 @@ function ActiveSlot({ slot }: { slot: SlotState }) {
       }
       const ext = item.extras.reduce((s, e) => s + (prices[e] || getExtraById(e)?.price || 0), 0);
       return sum + base + ext;
-    }, 0) + (slot.checkout.shipping || 0);
+    }, 0) + (slot.checkout.deliveryType === 'DELIVERY' ? (slot.checkout.shipping || 0) : 0);
   };
 
   const removeItem = (idx: number) => {
@@ -79,7 +80,8 @@ function ActiveSlot({ slot }: { slot: SlotState }) {
         beverageVariantId: !found.isBurger ? item.variantId : null,
         burgerIsPromo: item.isPromo,
         extras: [...item.extras],
-        editingIndex: idx
+        editingIndex: idx,
+        qty: 1
       }
     });
   };
@@ -139,12 +141,12 @@ function ActiveSlot({ slot }: { slot: SlotState }) {
 }
 
 function Wizard({ slot }: { slot: SlotState }) {
-  const { updateSlot, prices, promos } = useStore();
+  const { updateSlot, prices, promos, menuBurgers, menuBeverages, menuExtras } = useStore();
   const w = slot.wizard;
   if (!w) {
     return (
       <div style={{ padding: '10px 16px 0' }}>
-        <button className="btn full secondary" onClick={() => updateSlot(slot.id, { wizard: { step: 0, burgerId: null, beverageId: null, burgerVariantId: null, beverageVariantId: null, extras: [] } })}>+ Agregar ítem</button>
+        <button className="btn full secondary" onClick={() => updateSlot(slot.id, { wizard: { step: 0, burgerId: null, beverageId: null, burgerVariantId: null, beverageVariantId: null, extras: [], qty: 1 } })}>+ Agregar ítem</button>
       </div>
     );
   }
@@ -157,7 +159,7 @@ function Wizard({ slot }: { slot: SlotState }) {
       <div style={{ marginBottom: '10px' }}>
         <div className="wizard-title" style={{ marginBottom: '6px' }}>Hamburguesa</div>
         <div className="options-grid cols-5">
-          {MENU.burgers.map(b => (
+          {menuBurgers.map(b => (
             <button key={b.id} className={`option-btn ${w.burgerId === b.id ? 'selected' : ''}`} onClick={() => act({ burgerId: w.burgerId === b.id ? null : b.id, burgerVariantId: null })}>
               {b.name}
             </button>
@@ -167,7 +169,7 @@ function Wizard({ slot }: { slot: SlotState }) {
       <div>
         <div className="wizard-title" style={{ marginBottom: '6px' }}>Bebida (opcional)</div>
         <div className="options-grid cols-3">
-          {MENU.beverages.map(b => (
+          {menuBeverages.map(b => (
             <button key={b.id} className={`option-btn ${w.beverageId === b.id ? 'selected' : ''}`} onClick={() => act({ beverageId: w.beverageId === b.id ? null : b.id, beverageVariantId: null })}>
               {b.name}
             </button>
@@ -178,8 +180,8 @@ function Wizard({ slot }: { slot: SlotState }) {
   );
 
   const renderStep1 = () => {
-    const burger = w.burgerId ? MENU.burgers.find(p => p.id === w.burgerId) : null;
-    const beverage = w.beverageId ? MENU.beverages.find(p => p.id === w.beverageId) : null;
+    const burger = w.burgerId ? menuBurgers.find(p => p.id === w.burgerId) : null;
+    const beverage = w.beverageId ? menuBeverages.find(p => p.id === w.beverageId) : null;
 
     return (
       <>
@@ -239,7 +241,7 @@ function Wizard({ slot }: { slot: SlotState }) {
     <>
       <div className="wizard-title">Extras (opcional)</div>
       <div className="extras-grid">
-        {MENU.extras.map(e => (
+        {menuExtras.map(e => (
           <div key={e.id} className={`extra-pill ${w.extras.includes(e.id) ? 'selected' : ''}`} onClick={() => {
             const nextExtras = w.extras.includes(e.id) ? w.extras.filter(x => x !== e.id) : [...w.extras, e.id];
             act({ extras: nextExtras });
@@ -247,6 +249,49 @@ function Wizard({ slot }: { slot: SlotState }) {
             <span>{e.name}</span><span className="eprice">{fmtPrice(prices[e.id] || e.price)}</span>
           </div>
         ))}
+      </div>
+
+      {/* Quantity Selector */}
+      <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="wizard-title" style={{ marginBottom: 0 }}>Cantidad</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
+          <button
+            className="btn sm"
+            style={{ borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)', padding: '6px 14px', fontSize: '16px', fontWeight: 600 }}
+            onClick={() => act({ qty: Math.max(1, (w.qty || 1) - 1) })}
+          >−</button>
+          <input
+            type="number"
+            min={1}
+            max={99}
+            value={w.qty || 1}
+            onChange={e => act({ qty: Math.max(1, Math.min(99, Number(e.target.value) || 1)) })}
+            style={{
+              width: '48px',
+              textAlign: 'center',
+              padding: '6px 4px',
+              border: '1px solid var(--border)',
+              borderLeft: 'none',
+              borderRight: 'none',
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-primary)',
+              fontSize: '14px',
+              fontFamily: 'Consolas, monospace',
+              fontWeight: 600,
+              outline: 'none',
+              MozAppearance: 'textfield' as any,
+              appearance: 'textfield' as any,
+            }}
+          />
+          <button
+            className="btn sm"
+            style={{ borderRadius: '0 var(--radius-sm) var(--radius-sm) 0', padding: '6px 14px', fontSize: '16px', fontWeight: 600 }}
+            onClick={() => act({ qty: Math.min(99, (w.qty || 1) + 1) })}
+          >+</button>
+        </div>
+        {(w.qty || 1) > 1 && (
+          <span style={{ fontSize: '12px', color: 'var(--accent)', fontFamily: 'Consolas, monospace' }}>×{w.qty}</span>
+        )}
       </div>
     </>
   );
@@ -256,9 +301,16 @@ function Wizard({ slot }: { slot: SlotState }) {
                   w.step === 2;
 
   const onConfirm = () => {
+    const qty = w.qty || 1;
+    const baseItems = [];
+    if (w.burgerVariantId) baseItems.push({ variantId: w.burgerVariantId, extras: [...w.extras], isPromo: !!w.burgerIsPromo });
+    if (w.beverageVariantId) baseItems.push({ variantId: w.beverageVariantId, extras: [] });
+
+    // Replicate items by qty
     const newItems = [];
-    if (w.burgerVariantId) newItems.push({ variantId: w.burgerVariantId, extras: [...w.extras], isPromo: !!w.burgerIsPromo });
-    if (w.beverageVariantId) newItems.push({ variantId: w.beverageVariantId, extras: [] });
+    for (let i = 0; i < qty; i++) {
+      newItems.push(...baseItems.map(item => ({ ...item, extras: [...item.extras] })));
+    }
 
     const currentItems = [...slot.items];
     if (w.editingIndex !== undefined) {
@@ -286,7 +338,7 @@ function Wizard({ slot }: { slot: SlotState }) {
         {w.step < 2 ? (
           <button className="btn sm primary" disabled={!canNext} onClick={() => act({ step: w.step + 1 })}>Siguiente →</button>
         ) : (
-          <button className="btn sm primary" onClick={onConfirm}>{w.editingIndex !== undefined ? 'Actualizar' : 'Agregar'}</button>
+          <button className="btn sm primary" onClick={onConfirm}>{w.editingIndex !== undefined ? 'Actualizar' : `Agregar${(w.qty || 1) > 1 ? ` (×${w.qty})` : ''}`}</button>
         )}
       </div>
     </div>
@@ -296,8 +348,8 @@ function Wizard({ slot }: { slot: SlotState }) {
 function Checkout({ slot, calcTotal }: { slot: SlotState, calcTotal: () => number }) {
   const { updateSlot, orders, setOrders } = useStore();
   const co = slot.checkout;
-  const isTakeAway = co.shipping === 0;
-  const canConfirm = co.name && co.shipping !== null && (isTakeAway || co.address);
+  const isTakeAway = co.deliveryType === 'TAKE_AWAY';
+  const canConfirm = !!co.name && (isTakeAway || (co.shipping !== null && !!co.address));
 
   const up = (field: string, val: any) => updateSlot(slot.id, { checkout: { ...co, [field]: val } });
 
@@ -317,6 +369,15 @@ function Checkout({ slot, calcTotal }: { slot: SlotState, calcTotal: () => numbe
   return (
     <div className="checkout">
       <div className="checkout-title">Datos del pedido</div>
+      
+      <div style={{ marginBottom: '16px' }}>
+        <div className="form-label" style={{ marginBottom: '6px' }}>Tipo de pedido</div>
+        <div className="toggle-group">
+          <div className={`toggle-opt ${co.deliveryType === 'DELIVERY' ? 'selected' : ''}`} onClick={() => up('deliveryType', 'DELIVERY')}>🛵 Delivery</div>
+          <div className={`toggle-opt ${co.deliveryType === 'TAKE_AWAY' ? 'selected' : ''}`} onClick={() => updateSlot(slot.id, { checkout: { ...co, deliveryType: 'TAKE_AWAY', shipping: null, address: '' } })}>🥡 Take away</div>
+        </div>
+      </div>
+
       <div className="form-row">
         <div className="form-field">
           <div className="form-label">Nombre *</div>
@@ -329,16 +390,19 @@ function Checkout({ slot, calcTotal }: { slot: SlotState, calcTotal: () => numbe
           </div>
         )}
       </div>
-      <div>
-        <div className="form-label" style={{ marginBottom: '6px' }}>Costo de envío</div>
-        <div className="radio-group">
-          {[0, 1500, 2000, 3000].map(s => (
-            <div key={s} className={`radio-opt ${co.shipping === s ? 'selected' : ''}`} onClick={() => up('shipping', s)}>
-              {s === 0 ? '🥡 Take away' : `$${s}`}
-            </div>
-          ))}
+      
+      {!isTakeAway && (
+        <div style={{ marginBottom: '16px' }}>
+          <div className="form-label" style={{ marginBottom: '6px' }}>Costo de envío *</div>
+          <PriceInput
+            className="form-input"
+            value={co.shipping !== null && co.shipping >= 0 ? co.shipping : 0}
+            onChange={n => up('shipping', n >= 0 ? n : null)}
+            placeholder="Ej: 2.000"
+            style={{ fontFamily: 'Consolas, monospace', textAlign: 'left', width: '100%', maxWidth: '200px' }}
+          />
         </div>
-      </div>
+      )}
       <div>
         <div className="form-label" style={{ marginBottom: '6px' }}>Método de pago</div>
         <div className="toggle-group">
@@ -364,7 +428,7 @@ function PendingSlot({ slot }: { slot: SlotState }) {
       if (item.isPromo && promos[item.variantId]?.active) base = Math.max(0, base - promos[item.variantId].discount);
       const ext = item.extras.reduce((s, e) => s + (prices[e] || getExtraById(e)?.price || 0), 0);
       return sum + base + ext;
-    }, 0) + (slot.checkout.shipping || 0);
+    }, 0) + (slot.checkout.deliveryType === 'DELIVERY' ? (slot.checkout.shipping || 0) : 0);
   };
 
   const markPaid = async () => {

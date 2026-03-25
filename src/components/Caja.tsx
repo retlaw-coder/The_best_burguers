@@ -126,9 +126,8 @@ export function Caja() {
   }
 
   const rev = filtered.reduce((s, o) => s + o.total, 0);
-  const avg = filtered.length > 0 ? Math.round(rev / filtered.length) : 0;
-  const cash = filtered.filter(o => o.payment === 'CASH').length;
-  const trans = filtered.filter(o => o.payment === 'TRANSFER').length;
+  const cashRev = filtered.filter(o => o.payment === 'CASH').reduce((s, o) => s + o.total, 0);
+  const transRev = filtered.filter(o => o.payment === 'TRANSFER').reduce((s, o) => s + o.total, 0);
 
   return (
     <div className="caja-content visible">
@@ -176,14 +175,14 @@ export function Caja() {
           <div className="kpi-sub">Completados + en curso</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Ticket Promedio</div>
-          <div className="kpi-value">{fmtPrice(avg)}</div>
-          <div className="kpi-sub">Por pedido</div>
+          <div className="kpi-label">💵 Ingresos Efectivo</div>
+          <div className="kpi-value">{fmtPrice(cashRev)}</div>
+          <div className="kpi-sub">{filtered.filter(o => o.payment === 'CASH').length} pedidos</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Efectivo / Transfer.</div>
-          <div className="kpi-value">{cash} / {trans}</div>
-          <div className="kpi-sub">Métodos de pago</div>
+          <div className="kpi-label">📲 Ingresos Transferencia</div>
+          <div className="kpi-value">{fmtPrice(transRev)}</div>
+          <div className="kpi-sub">{filtered.filter(o => o.payment === 'TRANSFER').length} pedidos</div>
         </div>
       </div>
 
@@ -197,6 +196,7 @@ export function Caja() {
               <thead>
                 <tr style={{ background: 'var(--bg-tertiary)' }}>
                   <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>Ticket</th>
+                  <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>Fecha y Hora</th>
                   <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>Cliente</th>
                   <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>Estado</th>
                   <th style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>Pago</th>
@@ -206,9 +206,11 @@ export function Caja() {
               <tbody>
                 {filtered.map(o => {
                   const statusLabel: Record<string, string> = { PREPARING: 'Preparando', SENT: 'Enviado', COMPLETED: 'Completado' };
+                  const dateStr = new Date(o.createdAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
                   return (
                   <tr key={o.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '8px 16px', fontFamily: 'Consolas,monospace', color: 'var(--text-primary)' }}>#{o.ticketId}</td>
+                    <td style={{ padding: '8px 16px', fontFamily: 'Consolas,monospace', fontSize: '12px', color: 'var(--text-muted)' }}>{dateStr}</td>
                     <td style={{ padding: '8px 16px', color: 'var(--text-secondary)' }}>{o.name || '—'}</td>
                     <td style={{ padding: '8px 16px' }}><span className={`status-badge ${statusLabel[o.status] ? o.status.toLowerCase() : ''}`}>{statusLabel[o.status] || o.status}</span></td>
                     <td style={{ padding: '8px 16px', color: 'var(--text-secondary)' }}>{o.payment === 'CASH' ? 'Efectivo' : 'Transferencia'}</td>

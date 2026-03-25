@@ -1,3 +1,6 @@
+import { ExtraData } from '../store/store';
+import { useStore } from '../store/store';
+
 export const MENU = {
   burgers: [
     { id: 'cheese', name: 'Cheese', desc: 'Pan, carne, cheddar', variants: [
@@ -49,25 +52,31 @@ export const MENU = {
     { id: 'ex-papas', name: 'Papas pay', price: 500 },
     { id: 'ex-ketchup', name: 'Ketchup', price: 500 },
     { id: 'ex-tasty', name: 'Tasty', price: 500 },
-    { id: 'ex-onion', name: 'Cebolla caramelizada', price: 500 }
+    { id: 'ex-onion', name: 'Cebolla caramelizada', price: 500 },
+    { id: 'ex-cono-papas', name: 'Cono de papas', price: 3500 }
   ]
 };
 
 export function getVariantById(vid: string) {
-  for (const cat of [MENU.burgers, MENU.beverages]) {
+  const state = useStore.getState();
+  for (const cat of [state.menuBurgers, state.menuBeverages]) {
     for (const p of cat) {
       for (const v of p.variants) {
-        if (v.id === vid) return { product: p, variant: v, isBurger: cat === MENU.burgers };
+        if (v.id === vid) return { product: p, variant: v, isBurger: cat === state.menuBurgers };
       }
     }
   }
   return null;
 }
 
-export function getExtraById(eid: string) {
-  return MENU.extras.find(e => e.id === eid);
+export function getExtraById(eid: string): ExtraData | undefined {
+  return useStore.getState().menuExtras.find(e => e.id === eid);
+}
+
+export function formatThousands(n: number): string {
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 export function fmtPrice(n: number) {
-  return '$' + Math.round(n).toLocaleString('es-AR');
+  return '$' + formatThousands(n);
 }
