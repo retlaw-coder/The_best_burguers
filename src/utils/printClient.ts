@@ -45,8 +45,10 @@ export async function triggerPrint(
     })
   };
 
+  const printUrl = import.meta.env.PROD ? 'http://localhost:3001/api/print' : '/api/print';
+
   try {
-    const res = await fetch('/api/print', {
+    const res = await fetch(printUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
