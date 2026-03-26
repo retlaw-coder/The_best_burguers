@@ -25,7 +25,7 @@ export function Header() {
 
   return (
     <header className="header">
-      <span className="header-title">THE BEST BURGER</span>
+      <span className="header-title">THE BEST BURGERS</span>
       <span className="header-badge">POS v2.0</span>
       <div className="header-right">
         <span className="header-time">{time}</span>
