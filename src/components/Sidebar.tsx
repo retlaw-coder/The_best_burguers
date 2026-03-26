@@ -23,7 +23,7 @@ export function Sidebar({ collapsed, toggleSidebar, setView, currentView, addrTy
           <img src={logoUrl} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <div className="logo-text" style={{ textAlign: 'left', textTransform: 'uppercase', lineHeight: 1.1, fontSize: '14px', marginTop: '2px' }}>
-          the<br />best<br />burguer
+          the<br />best<br />burger
         </div>
       </div>
       <nav className="nav">
