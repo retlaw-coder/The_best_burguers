@@ -3,7 +3,7 @@ import { useStore, OrderData } from '../store/store';
 import { fmtPrice } from '../constants/menu';
 
 export function Caja() {
-  const { cajaUnlocked, setCajaUnlocked, orders } = useStore();
+  const { cajaUnlocked, setCajaUnlocked, orders, deliveries } = useStore();
   const [pinBuffer, setPinBuffer] = useState('');
   const [pinError, setPinError] = useState('');
   const [period, setPeriod] = useState<'day'|'week'|'month'>('day');
@@ -222,6 +222,56 @@ export function Caja() {
             </table>
           )}
         </div>
+      </div>
+
+      <div className="settings-section" style={{ marginTop: '16px' }}>
+        <div className="settings-section-header">Repartidores</div>
+        {(() => {
+          const deliveryMap = new Map<string, { name: string, count: number, total: number, orders: OrderData[] }>();
+          
+          deliveries.forEach(d => {
+            deliveryMap.set(d.id, { name: d.name, count: 0, total: 0, orders: [] });
+          });
+
+          filtered.forEach(o => {
+            if (o.deliveryPersonId) {
+              const name = o.deliveryPersonName || deliveryMap.get(o.deliveryPersonId)?.name || 'Repartidor Eliminado';
+              if (!deliveryMap.has(o.deliveryPersonId)) {
+                deliveryMap.set(o.deliveryPersonId, { name, count: 0, total: 0, orders: [] });
+              }
+              const stats = deliveryMap.get(o.deliveryPersonId)!;
+              stats.count += 1;
+              stats.total += o.shipping || 0;
+              stats.orders.push(o);
+            }
+          });
+
+          const activeOrUsedDeliveries = Array.from(deliveryMap.values()).filter(d => d.count > 0 || deliveries.some(x => x.name === d.name));
+
+          if (activeOrUsedDeliveries.length === 0) return <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>Sin datos de delivery en este período</div>;
+
+          return (
+            <div style={{ display: 'grid', gap: '12px', padding: '16px' }}>
+              {activeOrUsedDeliveries.map((d, index) => (
+                <div key={index} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: d.count > 0 ? '8px' : '0' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{d.count} pedido(s) <span style={{ color: 'var(--accent)', marginLeft: '4px' }}>({fmtPrice(d.total)})</span></div>
+                  </div>
+                  {d.count > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {d.orders.map(o => (
+                        <div key={o.id} style={{ fontSize: '11px', padding: '3px 6px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--text-muted)' }}>
+                          #{o.ticketId}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

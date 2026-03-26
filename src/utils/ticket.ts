@@ -89,9 +89,8 @@ export function buildTicketText(
   lines.push(totalLabel + ' '.repeat(Math.max(1, totalPad)) + totalPrice);
   
   lines.push('');
-  lines.push('DIRECCIÓN: ' + (co.address || '-'));
-  if (co.name) lines.push('NOMBRE: ' + co.name);
-  else lines.push('TICKET: ' + ticketId);
+  if (co.address && co.address.trim() !== '') lines.push('DIRECCIÓN: ' + co.address.trim());
+  if (co.name && co.name.trim() !== '') lines.push('NOMBRE: ' + co.name.trim());
   lines.push('');
   lines.push('Gracias por su compra.');
   

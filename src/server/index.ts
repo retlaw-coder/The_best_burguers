@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+import { printOrder } from './printerService.js';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -132,6 +133,17 @@ app.put('/api/orders/:id/status', async (req, res) => {
     include: { items: true }
   });
   res.json(order);
+});
+
+// Printing
+app.post('/api/print', async (req, res) => {
+  try {
+    await printOrder(req.body);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Printer Route] Error al imprimir:', err);
+    res.status(500).json({ success: false, error: String(err) });
+  }
 });
 
 app.listen(port, () => {

@@ -4,12 +4,13 @@ import { MENU } from '../constants/menu';
 export type BurgerData = { id: string; name: string; desc: string; variants: { id: string; name: string; price: number }[] };
 export type BeverageData = { id: string; name: string; variants: { id: string; name: string; price: number }[] };
 export type ExtraData = { id: string; name: string; price: number };
-export type CheckoutInfo = { deliveryType: 'DELIVERY' | 'TAKE_AWAY'; address: string; name: string; shipping: number | null; payment: 'CASH' | 'TRANSFER' };
+export type DeliveryPerson = { id: string; name: string };
+export type CheckoutInfo = { deliveryType: 'DELIVERY' | 'TAKE_AWAY'; address: string; name: string; shipping: number | null; payment: 'CASH' | 'TRANSFER'; deliveryPersonId: string | null };
 export type WizardState = { step: number; burgerId: string | null; beverageId: string | null; burgerVariantId: string | null; beverageVariantId: string | null; extras: string[]; editingIndex?: number; burgerIsPromo?: boolean; qty: number; };
 export type SlotItem = { variantId: string; extras: string[]; isPromo?: boolean; };
 export type SlotState = { id: number; state: 'empty' | 'active' | 'pending'; ticketId?: string; items: SlotItem[]; wizard: WizardState | null; checkout: CheckoutInfo; pendingPayment: boolean; _confirmCancel?: boolean; _confirmCancelPending?: boolean; };
 export type OrderStatus = 'PREPARING' | 'SENT' | 'COMPLETED';
-export type OrderData = { id: string; ticketId: string; name: string; address: string; shipping: number; payment: 'CASH' | 'TRANSFER'; items: SlotItem[]; total: number; status: OrderStatus; createdAt: string; expanded: boolean; };
+export type OrderData = { id: string; ticketId: string; name: string; address: string; shipping: number; payment: 'CASH' | 'TRANSFER'; items: SlotItem[]; total: number; status: OrderStatus; createdAt: string; expanded: boolean; deliveryPersonId?: string | null; deliveryPersonName?: string | null };
 export type ProductPrice = { id: string; price: number };
 export type PromoData = { variantId: string; discount: number; active: boolean };
 
@@ -23,6 +24,7 @@ interface AppState {
   menuBurgers: BurgerData[];
   menuBeverages: BeverageData[];
   menuExtras: ExtraData[];
+  deliveries: DeliveryPerson[];
   
   // Setters
   setPrices: (prices: Record<string, number>) => void;
@@ -50,6 +52,10 @@ interface AppState {
   addExtra: (name: string, price: number) => void;
   removeExtra: (id: string) => void;
   
+  // CRUD Deliveries
+  addDelivery: (name: string) => void;
+  removeDelivery: (id: string) => void;
+  
   // Order actions
   deleteOrder: (id: string) => void;
   
@@ -73,11 +79,16 @@ const loadMenuExtras = (): ExtraData[] => {
   return local ? JSON.parse(local) : [...MENU.extras];
 };
 
+const loadDeliveries = (): DeliveryPerson[] => {
+  const local = localStorage.getItem('__best_burgers_deliveries');
+  return local ? JSON.parse(local) : [];
+};
+
 export const useStore = create<AppState>((set, get) => ({
   slots: [
-    { id: 1, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false },
-    { id: 2, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false },
-    { id: 3, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false }
+    { id: 1, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH', deliveryPersonId: null }, pendingPayment: false },
+    { id: 2, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH', deliveryPersonId: null }, pendingPayment: false },
+    { id: 3, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH', deliveryPersonId: null }, pendingPayment: false }
   ],
   orders: [],
   prices: {},
@@ -87,6 +98,7 @@ export const useStore = create<AppState>((set, get) => ({
   menuBurgers: loadMenuBurgers(),
   menuBeverages: loadMenuBeverages(),
   menuExtras: loadMenuExtras(),
+  deliveries: loadDeliveries(),
 
   setPrices: (prices) => set({ prices }),
   setPromos: (promos) => set({ promos }),
@@ -115,7 +127,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (id > 3) {
         newSlots.splice(idx, 1);
       } else {
-        newSlots[idx] = { id, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false };
+        newSlots[idx] = { id, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH', deliveryPersonId: null }, pendingPayment: false };
       }
       return { slots: newSlots };
     });
@@ -126,7 +138,7 @@ export const useStore = create<AppState>((set, get) => ({
     set(state => {
       if (!state.slots.some(s => s.state === 'empty')) {
         const nextId = Math.max(...state.slots.map(s => s.id)) + 1;
-        return { slots: [...state.slots, { id: nextId, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH' }, pendingPayment: false }] };
+        return { slots: [...state.slots, { id: nextId, state: 'empty', items: [], wizard: null, checkout: { deliveryType: 'DELIVERY', address:'', name:'', shipping: null, payment: 'CASH', deliveryPersonId: null }, pendingPayment: false }] };
       }
       return state;
     });
@@ -225,6 +237,25 @@ export const useStore = create<AppState>((set, get) => ({
       delete newPrices[id];
       localStorage.setItem('__best_burgers_prices', JSON.stringify(newPrices));
       return { menuExtras: newExtras, prices: newPrices };
+    });
+  },
+
+  // ── CRUD Deliveries ───────────────────────────
+  addDelivery: (name) => {
+    const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    const newDelivery: DeliveryPerson = { id, name };
+    set(state => {
+      const newDeliveries = [...state.deliveries, newDelivery];
+      localStorage.setItem('__best_burgers_deliveries', JSON.stringify(newDeliveries));
+      return { deliveries: newDeliveries };
+    });
+  },
+
+  removeDelivery: (id) => {
+    set(state => {
+      const newDeliveries = state.deliveries.filter(d => d.id !== id);
+      localStorage.setItem('__best_burgers_deliveries', JSON.stringify(newDeliveries));
+      return { deliveries: newDeliveries };
     });
   },
 

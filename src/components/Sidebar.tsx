@@ -1,4 +1,5 @@
 import React from 'react';
+import logoUrl from '../assets/logo.svg';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -18,8 +19,12 @@ export function Sidebar({ collapsed, toggleSidebar, setView, currentView, addrTy
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`} id="sidebar">
       <div className="sidebar-logo">
-        <div className="logo-icon" onClick={toggleSidebar}>B</div>
-        <div className="logo-text">THE BEST<br />BURGERS</div>
+        <div className="logo-icon" onClick={toggleSidebar} style={{ background: 'transparent', padding: 0 }}>
+          <img src={logoUrl} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </div>
+        <div className="logo-text" style={{ textAlign: 'left', textTransform: 'uppercase', lineHeight: 1.1, fontSize: '14px', marginTop: '2px' }}>
+          the<br />best<br />burguer
+        </div>
       </div>
       <nav className="nav">
         <div className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>

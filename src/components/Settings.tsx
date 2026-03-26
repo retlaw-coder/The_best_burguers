@@ -4,7 +4,7 @@ import { MENU, fmtPrice, getVariantById } from '../constants/menu';
 import { PriceInput } from './PriceInput';
 
 export function Settings() {
-  const { prices, promos, fetchPricesAndPromos, setPrices, setPromos, menuBurgers, menuBeverages, menuExtras, addBurger, removeBurger, addBeverage, removeBeverage, addExtra, removeExtra } = useStore();
+  const { prices, promos, fetchPricesAndPromos, setPrices, setPromos, menuBurgers, menuBeverages, menuExtras, deliveries, addBurger, removeBurger, addBeverage, removeBeverage, addExtra, removeExtra, addDelivery, removeDelivery } = useStore();
   const [localPrices, setLocalPrices] = useState<Record<string, number>>({});
   const [promoState, setPromoState] = useState({ variantId: '', discount: 0 });
 
@@ -15,11 +15,14 @@ export function Settings() {
   const [beverageForm, setBeverageForm] = useState({ name: '', price: 0 });
   const [showAddExtra, setShowAddExtra] = useState(false);
   const [extraForm, setExtraForm] = useState({ name: '', price: 0 });
+  const [showAddDelivery, setShowAddDelivery] = useState(false);
+  const [deliveryForm, setDeliveryForm] = useState({ name: '' });
 
   // Delete confirmations
   const [confirmDeleteBurger, setConfirmDeleteBurger] = useState<string | null>(null);
   const [confirmDeleteBeverage, setConfirmDeleteBeverage] = useState<string | null>(null);
   const [confirmDeleteExtra, setConfirmDeleteExtra] = useState<string | null>(null);
+  const [confirmDeleteDelivery, setConfirmDeleteDelivery] = useState<string | null>(null);
 
   useEffect(() => { setLocalPrices(prices); }, [prices]);
 
@@ -139,6 +142,21 @@ export function Settings() {
     showToast(true, `Bebida "${bev?.name}" eliminada`);
   };
 
+  const handleAddDelivery = () => {
+    if (!deliveryForm.name) return;
+    addDelivery(deliveryForm.name);
+    setDeliveryForm({ name: '' });
+    setShowAddDelivery(false);
+    showToast(true, `Repartidor "${deliveryForm.name}" agregado`);
+  };
+
+  const handleDeleteDelivery = (id: string) => {
+    const deliv = deliveries.find(d => d.id === id);
+    removeDelivery(id);
+    setConfirmDeleteDelivery(null);
+    showToast(true, `Repartidor "${deliv?.name}" eliminado`);
+  };
+
   const allBurgerVariants = menuBurgers.flatMap(b => b.variants.map(v => ({ p: b.name, v: v.name, id: v.id })));
 
   const SectionHeader = ({ label }: { label: string }) => (
@@ -230,7 +248,7 @@ export function Settings() {
               </div>
             </div>
           ) : (
-            <button className="btn sm secondary full" onClick={() => setShowAddBurger(true)}>+ Agregar Hamburguesa</button>
+            <button className="btn sm outline full" onClick={() => setShowAddBurger(true)}>+ Agregar Hamburguesa</button>
           )}
         </div>
       </div>
@@ -280,7 +298,7 @@ export function Settings() {
               </div>
             </div>
           ) : (
-            <button className="btn sm secondary full" onClick={() => setShowAddBeverage(true)}>+ Agregar Bebida</button>
+            <button className="btn sm outline full" onClick={() => setShowAddBeverage(true)}>+ Agregar Bebida</button>
           )}
         </div>
       </div>
@@ -321,7 +339,43 @@ export function Settings() {
               </div>
             </div>
           ) : (
-            <button className="btn sm secondary full" onClick={() => setShowAddExtra(true)}>+ Agregar Extra</button>
+            <button className="btn sm outline full" onClick={() => setShowAddExtra(true)}>+ Agregar Extra</button>
+          )}
+        </div>
+      </div>
+
+      {/* ── REPARTIDORES ─────────────────────────── */}
+      <div className="settings-section">
+        <SectionHeader label="Repartidores (Delivery)" />
+        {deliveries.map(d => (
+          <div key={d.id} className="price-row" style={{ padding: '12px 18px', alignItems: 'center' }}>
+            <div className="price-name" style={{ flex: 1 }}>{d.name}</div>
+            {confirmDeleteDelivery === d.id ? (
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginLeft: '8px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--danger)' }}>¿Eliminar?</span>
+                <button className="btn sm danger" onClick={() => handleDeleteDelivery(d.id)}>Sí</button>
+                <button className="btn sm" onClick={() => setConfirmDeleteDelivery(null)}>No</button>
+              </div>
+            ) : (
+              <button className="btn sm danger" onClick={() => setConfirmDeleteDelivery(d.id)} style={{ marginLeft: '8px' }} title="Eliminar repartidor">🗑</button>
+            )}
+          </div>
+        ))}
+        <div style={{ padding: '14px 18px', borderTop: '1px solid var(--border)' }}>
+          {showAddDelivery ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Nuevo Repartidor</div>
+              <div className="form-field">
+                <div className="form-label">Nombre</div>
+                <input className="form-input" placeholder="Ej: Juan" value={deliveryForm.name} onChange={e => setDeliveryForm(p => ({ ...p, name: e.target.value }))} />
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="btn sm secondary" onClick={() => { setShowAddDelivery(false); setDeliveryForm({ name: '' }); }}>Cancelar</button>
+                <button className="btn sm primary full" onClick={handleAddDelivery} disabled={!deliveryForm.name}>Guardar</button>
+              </div>
+            </div>
+          ) : (
+            <button className="btn sm outline full" onClick={() => setShowAddDelivery(true)}>+ Agregar Repartidor</button>
           )}
         </div>
       </div>

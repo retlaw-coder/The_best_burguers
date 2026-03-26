@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore, SlotState } from '../store/store';
 import { MENU, fmtPrice, getVariantById, getExtraById } from '../constants/menu';
 import { buildTicketText } from '../utils/ticket';
+import { triggerPrint } from '../utils/printClient';
 import { PriceInput } from './PriceInput';
 
 export function OrderTaking() {
@@ -146,7 +147,7 @@ function Wizard({ slot }: { slot: SlotState }) {
   if (!w) {
     return (
       <div style={{ padding: '10px 16px 0' }}>
-        <button className="btn full secondary" onClick={() => updateSlot(slot.id, { wizard: { step: 0, burgerId: null, beverageId: null, burgerVariantId: null, beverageVariantId: null, extras: [], qty: 1 } })}>+ Agregar ítem</button>
+        <button className="btn full outline" onClick={() => updateSlot(slot.id, { wizard: { step: 0, burgerId: null, beverageId: null, burgerVariantId: null, beverageVariantId: null, extras: [], qty: 1 } })}>+ Agregar ítem</button>
       </div>
     );
   }
@@ -250,49 +251,6 @@ function Wizard({ slot }: { slot: SlotState }) {
           </div>
         ))}
       </div>
-
-      {/* Quantity Selector */}
-      <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div className="wizard-title" style={{ marginBottom: 0 }}>Cantidad</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
-          <button
-            className="btn sm"
-            style={{ borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)', padding: '6px 14px', fontSize: '16px', fontWeight: 600 }}
-            onClick={() => act({ qty: Math.max(1, (w.qty || 1) - 1) })}
-          >−</button>
-          <input
-            type="number"
-            min={1}
-            max={99}
-            value={w.qty || 1}
-            onChange={e => act({ qty: Math.max(1, Math.min(99, Number(e.target.value) || 1)) })}
-            style={{
-              width: '48px',
-              textAlign: 'center',
-              padding: '6px 4px',
-              border: '1px solid var(--border)',
-              borderLeft: 'none',
-              borderRight: 'none',
-              background: 'var(--bg-tertiary)',
-              color: 'var(--text-primary)',
-              fontSize: '14px',
-              fontFamily: 'Consolas, monospace',
-              fontWeight: 600,
-              outline: 'none',
-              MozAppearance: 'textfield' as any,
-              appearance: 'textfield' as any,
-            }}
-          />
-          <button
-            className="btn sm"
-            style={{ borderRadius: '0 var(--radius-sm) var(--radius-sm) 0', padding: '6px 14px', fontSize: '16px', fontWeight: 600 }}
-            onClick={() => act({ qty: Math.min(99, (w.qty || 1) + 1) })}
-          >+</button>
-        </div>
-        {(w.qty || 1) > 1 && (
-          <span style={{ fontSize: '12px', color: 'var(--accent)', fontFamily: 'Consolas, monospace' }}>×{w.qty}</span>
-        )}
-      </div>
     </>
   );
 
@@ -331,7 +289,17 @@ function Wizard({ slot }: { slot: SlotState }) {
       {w.step === 1 && renderStep1()}
       {w.step === 2 && renderStep2()}
       
-      <div className="wizard-nav">
+      {/* Global Quantity Selector aligned with Wizard design */}
+      <div style={{ padding: '12px 14px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Cantidad (Item/Combo completo)</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
+          <button className="btn sm" style={{ borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)', padding: '4px 12px', fontSize: '16px', fontWeight: 600 }} onClick={() => act({ qty: Math.max(1, (w.qty || 1) - 1) })}>−</button>
+          <input type="number" min={1} max={99} value={w.qty || 1} onChange={e => act({ qty: Math.max(1, Math.min(99, Number(e.target.value) || 1)) })} style={{ width: '48px', textAlign: 'center', padding: '4px 0', border: '1px solid var(--border)', borderLeft: 'none', borderRight: 'none', background: 'var(--glass-bg)', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'Consolas, monospace', fontWeight: 600, outline: 'none' }} />
+          <button className="btn sm" style={{ borderRadius: '0 var(--radius-sm) var(--radius-sm) 0', padding: '4px 12px', fontSize: '16px', fontWeight: 600 }} onClick={() => act({ qty: Math.min(99, (w.qty || 1) + 1) })}>+</button>
+        </div>
+      </div>
+
+      <div className="wizard-nav" style={{ marginTop: '16px' }}>
         {w.step > 0 && <button className="btn sm secondary" onClick={() => act({ step: w.step - 1 })}>← Atrás</button>}
         <button className="btn sm secondary" onClick={() => updateSlot(slot.id, { wizard: null })}>Cancelar</button>
         <div style={{ flex: 1 }} />
@@ -346,7 +314,7 @@ function Wizard({ slot }: { slot: SlotState }) {
 }
 
 function Checkout({ slot, calcTotal }: { slot: SlotState, calcTotal: () => number }) {
-  const { updateSlot, orders, setOrders } = useStore();
+  const { updateSlot, orders, setOrders, deliveries } = useStore();
   const co = slot.checkout;
   const isTakeAway = co.deliveryType === 'TAKE_AWAY';
   const canConfirm = !!co.name && (isTakeAway || (co.shipping !== null && !!co.address));
@@ -356,9 +324,11 @@ function Checkout({ slot, calcTotal }: { slot: SlotState, calcTotal: () => numbe
   const confirm = async () => {
     if (!canConfirm) return;
     const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2,'0');
     const dd = String(now.getDate()).padStart(2,'0');
     const seq = String(orders.length + 1).padStart(3,'0');
-    const ticketId = co.name.toUpperCase().replace(/\s+/g,'').slice(0,8) || `${dd}${seq}`;
+    const ticketId = `${yyyy}/${mm}/${dd}/${seq}`;
     
     updateSlot(slot.id, { state: 'pending', ticketId, wizard: null });
     
@@ -392,15 +362,34 @@ function Checkout({ slot, calcTotal }: { slot: SlotState, calcTotal: () => numbe
       </div>
       
       {!isTakeAway && (
-        <div style={{ marginBottom: '16px' }}>
-          <div className="form-label" style={{ marginBottom: '6px' }}>Costo de envío *</div>
-          <PriceInput
-            className="form-input"
-            value={co.shipping !== null && co.shipping >= 0 ? co.shipping : 0}
-            onChange={n => up('shipping', n >= 0 ? n : null)}
-            placeholder="Ej: 2.000"
-            style={{ fontFamily: 'Consolas, monospace', textAlign: 'left', width: '100%', maxWidth: '200px' }}
-          />
+        <div style={{ marginBottom: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 140px' }}>
+            <div className="form-label" style={{ marginBottom: '6px' }}>Costo de envío *</div>
+            <PriceInput
+              className="form-input"
+              value={co.shipping !== null && co.shipping >= 0 ? co.shipping : 0}
+              onChange={n => up('shipping', n >= 0 ? n : null)}
+              placeholder="Ej: 2.000"
+              style={{ fontFamily: 'Consolas, monospace', textAlign: 'left', width: '100%' }}
+            />
+          </div>
+          {deliveries.length > 0 && (
+            <div style={{ flex: '2 1 200px' }}>
+              <div className="form-label" style={{ marginBottom: '6px' }}>Repartidor</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {deliveries.map(d => (
+                  <button
+                    key={d.id}
+                    className={`btn sm ${co.deliveryPersonId === d.id ? 'primary' : 'outline'}`}
+                    style={{ borderRadius: '16px', padding: '4px 12px' }}
+                    onClick={() => up('deliveryPersonId', co.deliveryPersonId === d.id ? null : d.id)}
+                  >
+                    {d.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       <div>
@@ -420,7 +409,7 @@ function Checkout({ slot, calcTotal }: { slot: SlotState, calcTotal: () => numbe
 }
 
 function PendingSlot({ slot }: { slot: SlotState }) {
-  const { updateSlot, resetSlot, prices, promos, fetchOrders, openModal } = useStore();
+  const { updateSlot, resetSlot, prices, promos, fetchOrders, openModal, deliveries } = useStore();
   
   const calcTotal = () => {
     return slot.items.reduce((sum, item) => {
@@ -441,6 +430,8 @@ function PendingSlot({ slot }: { slot: SlotState }) {
       status: 'PREPARING',
       total,
       shipping: slot.checkout.shipping,
+      deliveryPersonId: slot.checkout.deliveryPersonId,
+      deliveryPersonName: slot.checkout.deliveryPersonId ? deliveries.find(d => d.id === slot.checkout.deliveryPersonId)?.name : null,
       items: slot.items.map(i => ({ variantId: i.variantId, label: 'Ítem', isPromo: i.isPromo, price: 0, extras: i.extras }))
     };
 
@@ -451,6 +442,7 @@ function PendingSlot({ slot }: { slot: SlotState }) {
         body: JSON.stringify(orderBody)
       });
       if (!res.ok) throw new Error();
+      await res.json(); // forces error if response is just the Vite SPA index.html fallback
     } catch {
       console.warn('Backend unavailable, saving order to localStorage');
       const newOrder = { 
@@ -496,7 +488,10 @@ function PendingSlot({ slot }: { slot: SlotState }) {
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button className="btn sm primary" onClick={markPaid}>✓ Marcar pagado</button>
-          <button className="btn sm" onClick={() => openModal('Ticket de impresión', buildTicketText(slot.ticketId!, slot.items, calcTotal(), slot.checkout, prices, promos))}>🖨 Imprimir</button>
+          <button className="btn sm" onClick={() => {
+            openModal('Ticket', buildTicketText(slot.ticketId!, slot.items, calcTotal(), slot.checkout, prices, promos));
+            triggerPrint(slot.ticketId!, slot.items, calcTotal(), slot.checkout, prices, promos);
+          }}>🖨 Imprimir</button>
           {slot._confirmCancelPending ? (
             <>
               <button className="btn sm danger" onClick={() => resetSlot(slot.id)}>Confirmar cancelación</button>

@@ -19,6 +19,8 @@
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "cors": "^2.8.5",
+    "escpos": "^3.0.0-alpha.6",
+    "escpos-usb": "^3.0.0-alpha.4",
     "express": "^4.21.2",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.474.0",
